@@ -9,6 +9,8 @@ public:
 	dos2(disk * d);
 	~dos2();
 
+	std::string name() override;
+
 	static dos2 * format(disk * d);
 
 	class dos2_file : public filesystem::file

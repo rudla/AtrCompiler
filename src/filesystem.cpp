@@ -4,6 +4,11 @@
 
 using namespace std;
 
+disk * filesystem::get_disk()
+{
+	return d;
+}
+
 void filesystem::file::write(byte * data, size_t size)
 {
 	while (size--) write(*data++);

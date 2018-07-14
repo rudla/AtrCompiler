@@ -9,4 +9,9 @@
     <LocalDebuggerWorkingDirectory>$(ProjectDir)\..\folder</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommandArguments>pack FLOP_61xx.ATR</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>p:\Atari\AtrCompiler\folder2</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

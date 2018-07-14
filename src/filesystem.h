@@ -6,6 +6,7 @@ class filesystem
 {
 public:
 	filesystem(disk * d) : d(d) {}
+	virtual std::string name() = 0;
 
 	class file
 	{
@@ -29,8 +30,17 @@ public:
 		virtual file * open_file() = 0;
 	};
 
+	disk * get_disk();
 	virtual file * create_file(char * name) = 0;
 	virtual dir * root_dir() = 0;
+
+	size_t sector_size() {
+		return d->sector_size();
+	}
+
+	disk::sector_num sector_count() {
+		return d->sector_count();
+	}
 
 protected:
 
@@ -42,10 +52,6 @@ protected:
 	void read_sector(disk::sector_num num, byte * data)
 	{
 		d->read_sector(num, data);
-	}
-
-	size_t sector_size() {
-		return d->sector_size();
 	}
 
 	disk * d;

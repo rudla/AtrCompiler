@@ -18,6 +18,11 @@ const size_t VTOC_FREE_SEC = 3;
 const size_t VTOC_BITMAP = 10;
 const size_t VTOC2_FREE_SEC = 122 + VTOC2_OFFSET;
 
+std::string dos2::name()
+{
+	return "dos2";
+}
+
 dos2::dos2(disk * d) : filesystem(d)
 {
 	dir_buf = new byte[d->sector_size()];

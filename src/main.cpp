@@ -2,11 +2,27 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <memory>
 #include "dos2_filesystem.h"
 
 using namespace std;
 
 /*
+
+Index file
+==========
+
+DISK  density
+BOOT  filename
+FS    filesystem [dos2]
+
+filename [atarifilename]
+--- atarifilename
+BIN filename atarifilename
+DOS filename atarifilename -- will install the file as DOS.SYS
+
+
+Atari filename format
 
 filename  source format filename
 
@@ -17,14 +33,63 @@ filename  source format filename
 
    */
 
+enum class file_format {
+	empty,
+	bin,
+	dos
+};
+
+bool parse_atari_name(istringstream & s, char * name, size_t len)
+{
+	bool inverse = false;
+	for (size_t i = 0; i < len; i++) name[i] = ' ';
+	name[len] = 0;
+	size_t i = 0;
+	char c;
+	bool atascii = false;
+
+	while (s.get(c)) {
+		if (c == ' ') {
+			if (i == 0) continue;
+			else break;
+		}
+		if (c == '\\') {
+			s.get(c);
+			switch (c) {
+			case 'i':
+				inverse = !inverse;
+				continue;
+			case 'x':
+				char h[3];
+				s.get(h, 3);
+				c = std::stoi(h, nullptr, 16);
+				atascii = true;
+				break;
+			}
+		} else if (c == '.' && i < 9) {
+			i = 8;
+			continue;
+		}
+		if (i == 12) {
+			throw "filename too long";
+		}
+		name[i] = c | (inverse ? 128 : 0);
+		i++;
+	}
+	return i > 0;
+}
+
 disk * pack(const string dir_filename)
 {
 
 	ifstream index(dir_filename);
 
-	auto d = new disk(128, 1040);
+	size_t sector_size = 128;
+	disk::sector_num sector_count = 1040;
+	string dos_type;
 
-	filesystem * fs = dos2::format(d);
+	disk * d = nullptr;
+	filesystem * fs = nullptr;
 
 	while (!index.eof()) {
 		string line;
@@ -32,48 +97,64 @@ disk * pack(const string dir_filename)
 		if (line.size() == 0) continue;
 
 		istringstream s(line);
-		string atari_name;
+
+		//parse file name or command
+
+		string filename;
+
+		s >> filename;
+
+		file_format fformat = file_format::bin;
+
+		if (filename == "DISK") {
+			s >> sector_count >> sector_size;
+			continue;
+
+		} else if (filename == "FORMAT") {
+			s >> dos_type;
+			if (!d) d = new disk(sector_size, sector_count);
+			fs = dos2::format(d);
+			continue;
+
+		} else if (filename == "BOOT") {
+			if (!d) d = new disk(sector_size, sector_count);
+			s >> filename;
+			d->install_boot(filename);
+			continue;
+
+		} else if (filename == "---") {
+			fformat = file_format::empty;
+		} else {
+			if (filename == "BIN") {
+				fformat = file_format::bin;
+				s >> filename;
+			} else if (filename == "DOS") {
+				fformat = file_format::dos;
+				s >> filename;
+			} else {
+				fformat = file_format::bin;
+			}
+		}
 
 		// parse atari name
 
 		char name[12];
-		bool inverse = false;
-		for (size_t i = 0; i < sizeof(name); i++) name[i] = ' ';
-		name[11] = 0;
-		size_t i = 0;
-		char c;
-		bool atascii = false;
-
-		while (s.get(c)) {
-			if (c == ' ') break;
-			if (c == '\\') {
-				s.get(c);
-				switch (c) {
-				case 'i':
-					inverse = !inverse;
-					continue;
-				case 'x':
-					char h[3];
-					s.get(h, 3);
-					c = std::stoi(h, nullptr, 16);
-					atascii = true;
-					break;
-				}
-			} else if (c == '.' && i < 9) {
-				atari_name.push_back(c);
-				i = 8;
-				continue;
-			}
-			if (i == 12) {
-				throw "filename too long";
-			}
-			atari_name.push_back(c);
-			name[i] = c | (inverse ? 128 : 0);
-			i++;
+		if (!parse_atari_name(s, name, 11)) {
+			istringstream fs(filename);
+			parse_atari_name(fs, name, 11);
 		}
 
-		string filename;
+		auto file = fs->create_file(name);
+		if (fformat != file_format::empty) {
+			if (filename.size() == 0) {
+				throw "no filename";
+			}
+			cout << filename << "\n";
+			file->import(filename);
+		}
+		delete file;
 
+/*
 		s >> filename;
 
 		int format = 2;
@@ -112,6 +193,7 @@ disk * pack(const string dir_filename)
 			}
 			delete file;
 		}
+		*/
 	}
 	return d;
 }
@@ -123,6 +205,15 @@ void unpack(filesystem * fs, const string & dir_file)
 		atrdir.open(dir_file);
 	}
 
+	cout << "DISK " << fs->sector_count() << " " << fs->sector_size() << "\n";
+	cout << "FORMAT " << fs->name() << "\n";
+
+	if (atrdir.is_open()) {
+		atrdir << "DISK " << fs->sector_count() << " " << fs->sector_size() << "\n";
+		atrdir << "FORMAT " << fs->name() << "\n";
+	}
+
+
 	auto it = fs->root_dir();
 	int name_idx = 1;
 	for (; !it->at_end(); it->next()) {
@@ -131,19 +222,22 @@ void unpack(filesystem * fs, const string & dir_file)
 		cout << name << " " << it->sec_size() << "\n";
 
 		if (atrdir.is_open()) {
-			atrdir << name;
 			if (it->sec_size() == 0) {
-				atrdir << " ---";
+				atrdir << "--- ";
+				atrdir << name;
 			} else {
+
 				if (name.find('\\') != string::npos) {
 					ostringstream s;
-					s << "F" << name_idx;
+					s << "F" << name_idx << ".bin";
 					auto p = name.find('.');
 					if (p != string::npos) {
 						s << name.substr(p);
 					}
-					name = s.str();
-					atrdir << " bin " << name;
+					atrdir << s.str() << " " << name;
+					name = s.str();					
+				} else {
+					atrdir << name;
 				}
 
 				auto file = it->open_file();
