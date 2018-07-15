@@ -11,7 +11,7 @@ public:
 
 	std::string name() override;
 
-	static dos2 * format(disk * d);
+	static filesystem * format(disk * d);
 
 	class dos2_file : public filesystem::file
 	{
@@ -72,7 +72,7 @@ public:
 	filesystem::dir * root_dir() override;
 	filesystem::file * create_file(char * name) override;
 
-private:
+protected:
 
 	// DIR
 	void dir_format();
@@ -82,13 +82,15 @@ private:
 
 	// VTOC
 	
-	disk::sector_num alloc_sector();
 	inline void switch_sector_used(disk::sector_num sec) {
 		vtoc_buf[10 + sec / 8] ^= (128 >> (sec & 7));
 	}
-	void vtoc_format();
-	void vtoc_write();
-	void vtoc_read();
+	
+	virtual void vtoc_init();
+	virtual disk::sector_num alloc_sector();
+	virtual void vtoc_format();
+	virtual void vtoc_read();
+	virtual void vtoc_write();
 
 	disk::sector_num vtoc_sec1;
 	disk::sector_num vtoc_sec2;

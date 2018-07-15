@@ -6,6 +6,7 @@ class filesystem
 {
 public:
 	filesystem(disk * d) : d(d) {}
+	virtual ~filesystem() {};
 	virtual std::string name() = 0;
 
 	class file

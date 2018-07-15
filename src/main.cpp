@@ -4,6 +4,7 @@
 #include <sstream>
 #include <memory>
 #include "dos2_filesystem.h"
+#include "dos_IIplus.h"
 
 using namespace std;
 
@@ -113,7 +114,13 @@ disk * pack(const string dir_filename)
 		} else if (filename == "FORMAT") {
 			s >> dos_type;
 			if (!d) d = new disk(sector_size, sector_count);
-			fs = dos2::format(d);
+			if (dos_type == "II+") {
+				fs = dos_IIplus::format(d);
+			} else if (dos_type == "2.5" || dos_type == "2.0") {
+				fs = dos2::format(d);
+			} else {
+				throw "Unknown dos format";
+			}
 			continue;
 
 		} else if (filename == "BOOT") {
@@ -195,6 +202,7 @@ disk * pack(const string dir_filename)
 		}
 		*/
 	}
+	delete fs;
 	return d;
 }
 

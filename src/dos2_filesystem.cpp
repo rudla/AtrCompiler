@@ -14,9 +14,9 @@ const size_t VTOC2_OFFSET = 16;
 const size_t VTOC_BUF_SIZE = 256;
 
 const size_t VTOC_MAX_FREE_SEC = 1;
-const size_t VTOC_FREE_SEC = 3;
-const size_t VTOC_BITMAP = 10;
-const size_t VTOC2_FREE_SEC = 122 + VTOC2_OFFSET;
+const size_t VTOC_FREE_SEC     = 3;
+const size_t VTOC_BITMAP       = 10;
+const size_t VTOC2_FREE_SEC = VTOC2_OFFSET + 122;
 
 std::string dos2::name()
 {
@@ -26,28 +26,23 @@ std::string dos2::name()
 dos2::dos2(disk * d) : filesystem(d)
 {
 	dir_buf = new byte[d->sector_size()];
+
 	dir_start = 361;
 	dir_end = 368;
 
-	vtoc_sec1 = 360;
-	if (d->sector_count() < 1024) {
-		vtoc_sec2 = 0;
-		vtoc_size = 90;
-	} else {
-		vtoc_sec2 = 1024;
-		vtoc_size = 128;
-	}
+	vtoc_init();
 	vtoc_buf = new byte[VTOC_BUF_SIZE];  // we need only 128 for single density disk
 	vtoc_read();
 }
 
 dos2::~dos2()
 {
+	vtoc_write();
 	delete[] dir_buf;
 	delete[] vtoc_buf;
 }
 
-dos2 * dos2::format(disk * d)
+filesystem * dos2::format(disk * d)
 {
 
 	dos2 * fs = new dos2(d);
@@ -307,15 +302,30 @@ VTOC1                                     VTOC2
 
 */
 
+const size_t boot_size = 3;
+
+void dos2::vtoc_init()
+{
+	vtoc_sec1 = 360;
+	if (d->sector_count() < 1024) {
+		vtoc_sec2 = 0;
+		vtoc_size = 90;
+	} else {
+		vtoc_sec2 = 1024;
+		vtoc_size = 128;
+	}
+}
+
 void dos2::vtoc_format()
 {
 	// Init VTOC
-	auto max_free = (d->sector_count() >= 1024) ? 1010 : 707;
 
+	auto capacity = (d->sector_count() >= 1024) ? 1010 : 707;
 	memset(vtoc_buf, 0, VTOC_BUF_SIZE);
+
 	vtoc_buf[0] = 2;  // DOS_2.0	
-	set_word(vtoc_buf, VTOC_MAX_FREE_SEC, max_free);
-	set_word(vtoc_buf, VTOC_FREE_SEC, max_free);
+	set_word(vtoc_buf, VTOC_MAX_FREE_SEC, capacity);
+	set_word(vtoc_buf, VTOC_FREE_SEC, 707);
 
 	for (size_t i = 0; i < vtoc_size; i++) vtoc_buf[VTOC_BITMAP + i] = 0xff;
 	vtoc_buf[VTOC_BITMAP] = 0x0f;		// first 4 sectors are always preallocated
@@ -324,6 +334,8 @@ void dos2::vtoc_format()
 		switch_sector_used(720);
 		switch_sector_used(vtoc_sec2);
 		set_word(vtoc_buf, VTOC2_FREE_SEC, 303);
+	} else {
+
 	}
 	for (auto i = dir_start; i <= dir_end; i++) {
 		switch_sector_used(i);
@@ -349,6 +361,11 @@ void dos2::vtoc_read()
 }
 
 disk::sector_num dos2::alloc_sector()
+/*
+Purpose:
+	Find free sector on the disk and return it's number.
+	Mark the sector as used and decrement number of free sectors in the VTOC table.
+*/
 {
 	disk::sector_num sec = 0;
 
@@ -357,10 +374,11 @@ disk::sector_num dos2::alloc_sector()
 		for (byte m = 128; m != 0; m /= 2) {
 			if (b & m) {
 				vtoc_buf[VTOC_BITMAP + i] = b ^ m;
-				auto off = (sec < 720) ? VTOC_FREE_SEC : VTOC2_FREE_SEC;
+				auto off = (sec < 720 || vtoc_sec2 == 0) ? VTOC_FREE_SEC : VTOC2_FREE_SEC;
 				int free = read_word(vtoc_buf, off);
 				free--;
 				set_word(vtoc_buf, off, free);
+				vtoc_dirty = true;
 				vtoc_write();
 				return sec;
 			}

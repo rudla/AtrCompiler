@@ -119,10 +119,12 @@
     <ClCompile Include="dos2_filesystem.cpp" />
     <ClCompile Include="filesystem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="dos_IIplus.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="disk.h" />
     <ClInclude Include="dos2_filesystem.h" />
+    <ClInclude Include="dos_IIplus.h" />
     <ClInclude Include="filesystem.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
