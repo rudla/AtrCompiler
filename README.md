@@ -10,11 +10,15 @@ DISK  <sector size> <number of sectors>
 BOOT  filename
 FORMAT  filesystem [dos2]
 
-filename [atarifilename]
+[BIN|DOS|] filename [atarifilename]
 
-BIN filename atarifilename
-DOS filename atarifilename
+--- atarifilename
 ```
+
+File commands may start with optional format specifier (may be ommited, in which case it is BIN).
+Filename may be followed by another filename, which specifies how should be the file named on the Atari disk.
+
+Special --- format means, the file is empty (there is no file) and only empty directory entry should be created.
 
 ## Atari filename format
 
