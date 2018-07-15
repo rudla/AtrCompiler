@@ -1,6 +1,17 @@
 # AtrCompiler
 Tool to create Atari disk images (ATR files).
 
+## Usage
+
+AtrCompiler can unpack contents of a ATR disk to a folder as separate files and create a dir file, which describes the contents of the disk, its size etc.
+You can then modify the files and pack them to a new ATR disk.
+
+```
+AtrCompiler list   atr_file
+AtrCompiler pack   atr_file [dir_file]
+AtrCompiler unpack atr_file [dir_file]
+```
+
 
 ## Dir file
 Directory file describes format and contents of the created disk. It is composed on commands. Every command is on separate line.
