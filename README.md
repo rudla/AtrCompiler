@@ -30,7 +30,10 @@ The disk will be bootable. The file specified must contain 3 sectors that will b
 FORMAT  filesystem [dos2]
 ```
 Format the disk for use with specified filesystem.
-Only dos2 is supported for now.
+Possible values are:
+ * 2.0
+ * 2.5
+ * II+
 
 ```
 [BIN|DOS|] filename [atarifilename]
