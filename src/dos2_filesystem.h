@@ -10,6 +10,7 @@ public:
 	~dos2();
 
 	std::string name() override;
+	const property * properties();
 
 	static filesystem * format(disk * d);
 
@@ -17,12 +18,13 @@ public:
 	{
 	public:
 
-		dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_pos, int file_no, disk::sector_num first_sector, disk::sector_num sec_cnt, bool writing);
+		dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_pos, int file_no, disk::sector_num first_sec, disk::sector_num sec_cnt, bool writing);
 		~dos2_file();
 
 		bool eof() override;
 		byte read() override;
 		void write(byte b) override;
+		disk::sector_num first_sector() override;
 
 	private:
 
@@ -44,7 +46,7 @@ public:
 		size_t           dir_pos;		// position in sector
 		int				 file_no;
 
-		disk::sector_num first_sector;
+		disk::sector_num first_sec;
 		size_t sec_cnt;					// size if not known yet
 		size_t size;					// size in bytes
 

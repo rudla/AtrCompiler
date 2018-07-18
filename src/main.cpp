@@ -91,6 +91,7 @@ disk * pack(const string dir_filename)
 
 	disk * d = nullptr;
 	filesystem * fs = nullptr;
+	const filesystem::property * prop;
 
 	while (!index.eof()) {
 		string line;
@@ -129,7 +130,12 @@ disk * pack(const string dir_filename)
 			d->install_boot(filename);
 			continue;
 
-		} else if (filename == "---") {
+		} else if (fs && (prop = fs->find_property(filename))) {
+			string value;
+			getline(s, value);
+			fs->set_property(prop, value);
+			continue;
+		}  else if (filename == "---") {
 			fformat = file_format::empty;
 		} else {
 			if (filename == "BIN") {
@@ -158,6 +164,10 @@ disk * pack(const string dir_filename)
 			}
 			cout << filename << "\n";
 			file->import(filename);
+			if (fformat == file_format::dos) {
+				auto pos = file->first_sector();
+				fs->set_dos(file->first_sector());
+			}
 		}
 		delete file;
 

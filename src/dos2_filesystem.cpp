@@ -23,6 +23,17 @@ std::string dos2::name()
 	return "dos2";
 }
 
+
+const filesystem::property * dos2::properties()
+{
+	static const filesystem::property props[2] = {
+		{ "DOSSEC",   1, 9, 2},
+		{ nullptr, 0, 0, 0}
+	};
+
+	return props;
+}
+
 dos2::dos2(disk * d) : filesystem(d)
 {
 	dir_buf = new byte[d->sector_size()];
@@ -145,11 +156,11 @@ filesystem::file * dos2::dos2_dir::open_file()
 	return new dos2_file(fs, sector, pos, file_no, read_word(buf, pos + 3), sec_size(), false);
 }
 
-dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_pos, int file_no, disk::sector_num first_sector, disk::sector_num sec_cnt, bool writing) :
+dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_pos, int file_no, disk::sector_num first_sec, disk::sector_num sec_cnt, bool writing) :
 	fs(fs), dir_sector(dir_sector), 
 	file_no(file_no), 
 	dir_pos(dir_pos), 
-	first_sector(first_sector), 
+	first_sec(first_sec), 
 	sec_cnt(sec_cnt), 
 	writing(writing) 
 {
@@ -158,7 +169,7 @@ dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_po
 	sector = 0;
 	size = 0;
 	if (!writing) {
-		sector = first_sector;
+		sector = first_sec;
 		fs.read_sector(sector, buf);
 	}
 }
@@ -192,9 +203,9 @@ dos2::dos2_file::~dos2_file()
 {
 	if (writing) {
 		if (pos > 0) {
-			if (first_sector == 0) {
+			if (first_sec == 0) {
 				auto sec = fs.alloc_sector();
-				first_sector = sec;
+				first_sec = sec;
 				sector = sec;
 			}
 			write_sec(0);
@@ -202,7 +213,7 @@ dos2::dos2_file::~dos2_file()
 
 		fs.read_sector(dir_sector, buf);
 		set_word(buf, dir_pos + 1, sec_cnt);
-		set_word(buf, dir_pos + 3, first_sector);
+		set_word(buf, dir_pos + 3, first_sec);
 		fs.write_sector(dir_sector, buf);
 	}
 }
@@ -230,6 +241,11 @@ disk::sector_num dos2::dos2_file::sector_next()
 	return buf[p - 2] + ((buf[p - 3] & 3) << 8);
 }
 
+disk::sector_num dos2::dos2_file::first_sector()
+{
+	return first_sec;
+}
+
 bool dos2::dos2_file::eof()
 {
 	if (!sector_end()) return false;
@@ -254,8 +270,8 @@ void dos2::dos2_file::write(byte b)
 {
 	if (pos == fs.sector_size() - 3) {
 		auto sec = fs.alloc_sector();
-		if (first_sector == 0) {
-			first_sector = sec;
+		if (first_sec == 0) {
+			first_sec = sec;
 			sector = sec;
 			sec = fs.alloc_sector();
 		}

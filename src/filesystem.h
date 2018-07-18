@@ -9,6 +9,27 @@ public:
 	virtual ~filesystem() {};
 	virtual std::string name() = 0;
 
+	const char * dos_lo = "DOSSEC_LO";
+	const char * dos_hi = "DOSSEC_HI";
+
+	struct property
+	{
+		const char * name;
+		disk::sector_num sector;
+		size_t offset;
+		size_t size;
+	};
+
+	virtual const property * properties() = 0;
+
+	const property * find_property(const std::string & name);
+	void set_property(const property * prop, const std::string & value);
+	void set_property(const property * prop, int value);
+	byte get_property_byte(const char * name);
+
+	void set_dos(disk::sector_num sector);
+	disk::sector_num get_dos();
+
 	class file
 	{
 	public:
@@ -19,6 +40,7 @@ public:
 		void save(const std::string & filename);
 		void import(const std::string & filename);
 		virtual ~file() {};
+		virtual disk::sector_num first_sector() = 0;
 	};
 
 	class dir

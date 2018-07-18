@@ -2,7 +2,20 @@
 DOS II+
 
 
-Full sector size is used.
+Format of DOS II+ filesystem is simmilar to DOS 2.0.
+For single density, the format is compatible.
+For bigger densities, VTOC is handled differently.
+
+## VTOC
+
+VTOC is in sectors 359, 360
+
+360    0     disk version (=3)
+1..2  disk capacity (1009 for medium density)
+3..4  number of free sectors (1009 at the start)
+5..10 unused
+
+359    0..9  additional 10 bytes of VTOC
 
 ## Boot sector
 
@@ -19,16 +32,6 @@ XCOL = $710 Text-Hintergrundfarbe
 
 Ist dieses Byte nicht 0, legt es die Text-Hintergrundfarbe fest. 0 bedeutet die Standardhintergrundfarbe.
 
-## VTOC
-
-VTOC is in sectors 359, 360
-
-360    0     disk version (=3)
-       1..2  disk capacity (1009 for medium density)
-       3..4  number of free sectors (1009 at the start)
-	   5..10 unused
-
-359    0..9  additional 10 bytes of VTOC
 
 */
 
@@ -43,6 +46,7 @@ public:
 	dos_IIplus(disk * d);
 
 	std::string name();
+	const property * properties();
 
 	static filesystem * format(disk * d);
 
