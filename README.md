@@ -14,7 +14,7 @@ AtrCompiler unpack atr_file [dir_file]
 
 Default name of dir_file is DIR.TXT.
 
-## Unpacking
+### Unpacking
 
 When unpacking the disk, filesystem will be autodetected. If the filesystem is not recognized, DOS 2.5 will be used.
 Boot sectors are automatically saved into BOOT.BIN file.
