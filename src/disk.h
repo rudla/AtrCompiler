@@ -51,6 +51,7 @@ public:
 	void save(const std::string & filename);
 
 	void install_boot(const std::string & filename);
+	void save_boot(const std::string & filename);
 
 private:
 	byte * sector_ptr(size_t num) {

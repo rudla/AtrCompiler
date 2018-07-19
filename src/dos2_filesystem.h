@@ -13,6 +13,7 @@ public:
 	const property * properties();
 
 	static filesystem * format(disk * d);
+	static bool detect(disk * d);
 
 	class dos2_file : public filesystem::file
 	{

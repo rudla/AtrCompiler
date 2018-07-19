@@ -109,3 +109,13 @@ void disk::install_boot(const std::string & filename)
 		write_sector(s, buf);
 	}
 }
+
+void disk::save_boot(const std::string & filename)
+{
+	byte buf[128];
+	ofstream f(filename, ios::binary);
+	for (sector_num s = 1; s <= 3; s++) {
+		read_sector(s, buf);
+		f.write((char *)buf, 128);
+	}
+}

@@ -70,34 +70,41 @@ void filesystem::set_property(const property * prop, int value)
 	delete[] buf;
 }
 
-void filesystem::set_dos(disk::sector_num sector)
+byte filesystem::get_byte(disk::sector_num sector, size_t offset)
 {
-	if (auto p = find_property(dos_lo)) {
-		set_property(p, sector & 0xff);
-	}
-	if (auto p = find_property(dos_hi)) {
-		set_property(p, (sector >> 8) & 0xff);
-	}
+	auto buf = new byte[sector_size()];
+	read_sector(sector, buf);
+	byte b = buf[offset];
+	delete[] buf;
+	return b;
 }
 
-byte filesystem::get_property_byte(const char * name)
+size_t filesystem::get_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset)
 {
-	if (auto prop = find_property(name)) {
-		auto buf = new byte[sector_size()];
-		read_sector(prop->sector, buf);
-		byte b = buf[prop->offset];
-		delete[] buf;
-		return b;
-	}
-	throw "unknown property";
+	byte lo = get_byte(sector, lo_offset);
+	byte hi = get_byte(sector, hi_offset);
+	return size_t(hi) * 256 + lo;
 }
 
-disk::sector_num filesystem::get_dos()
+byte filesystem::get_property_byte(const property * prop)
 {
-	byte lo = 0;
-	byte hi = 0;
+	return get_byte(prop->sector, prop->offset);
+}
 
-	lo = get_property_byte(dos_lo);
-	hi = get_property_byte(dos_hi);
-	return ((int)hi * 256) + lo;
+string filesystem::get_property(const property * prop)
+{
+	char txt[32];
+	size_t t;
+	txt[0] = 0;
+
+	if (prop->size == 1) {
+		t = get_byte(prop->sector, prop->offset);
+		txt[0] = '$';
+		char h[3];
+		_itoa_s<3>((int)t, h, 16);		
+		txt[1] = h[0];
+		txt[2] = h[1];
+		txt[3] = 0;
+	}
+	return string(txt);
 }

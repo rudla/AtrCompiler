@@ -22,16 +22,6 @@ filename [atarifilename]
 BIN filename atarifilename
 DOS filename atarifilename -- will install the file as DOS.SYS
 
-
-Atari filename format
-
-filename  source format filename
-
-   \i   turn inversion on/off
-   \xhh hex char
-   \_   space
-   \\   backslash
-
    */
 
 enum class file_format {
@@ -40,9 +30,18 @@ enum class file_format {
 	dos
 };
 
-bool parse_atari_name(istringstream & s, char * name, size_t len)
-{
+bool format_atari_name(istringstream & s, char * name, size_t name_len, size_t ext_len)
+/*
+  Atari filename format
+
+  \i   turn inversion on / off
+  \xhh hex char
+  \    space
+  \\   backslash
+*/{
 	bool inverse = false;
+	auto len = name_len + ext_len;
+
 	for (size_t i = 0; i < len; i++) name[i] = ' ';
 	name[len] = 0;
 	size_t i = 0;
@@ -67,17 +66,28 @@ bool parse_atari_name(istringstream & s, char * name, size_t len)
 				atascii = true;
 				break;
 			}
-		} else if (c == '.' && i < 9) {
-			i = 8;
+		} else if (c == '.' && i <= name_len) {
+			i = name_len;
 			continue;
 		}
-		if (i == 12) {
+		if (i > len) {
 			throw "filename too long";
 		}
 		name[i] = c | (inverse ? 128 : 0);
 		i++;
 	}
 	return i > 0;
+}
+
+filesystem * detect_filesystem(disk * d)
+{
+	filesystem * fs;
+	if (dos_IIplus::detect(d)) {
+		fs = new dos_IIplus(d);
+	} else {
+		fs = new dos2(d);
+	}
+	return fs;
 }
 
 disk * pack(const string dir_filename)
@@ -152,9 +162,9 @@ disk * pack(const string dir_filename)
 		// parse atari name
 
 		char name[12];
-		if (!parse_atari_name(s, name, 11)) {
+		if (!format_atari_name(s, name, 8, 3)) {
 			istringstream fs(filename);
-			parse_atari_name(fs, name, 11);
+			format_atari_name(fs, name, 8, 3);
 		}
 
 		auto file = fs->create_file(name);
@@ -166,51 +176,10 @@ disk * pack(const string dir_filename)
 			file->import(filename);
 			if (fformat == file_format::dos) {
 				auto pos = file->first_sector();
-				fs->set_dos(file->first_sector());
+				fs->set_dos_first_sector(file->first_sector());
 			}
 		}
 		delete file;
-
-/*
-		s >> filename;
-
-		int format = 2;
-		if (filename == "---") {
-			format = 0;
-		} else if (filename == "tch") {
-			filename.clear();
-			s >> filename;
-			format = 1;
-		} else if (filename == "bin") {
-			filename.clear();
-			s >> filename;
-			format = 2;
-		} else if (filename == "boot") {
-			filename.clear();
-			s >> filename;
-			format = 3;
-		} else {
-			format = 2;
-		}
-
-		if (filename.size() == 0 && !atascii) {
-			filename = atari_name;
-		}
-
-		if (format == 3) {
-			d->install_boot(filename);
-		} else {
-			auto file = fs->create_file(name);
-			if (format != 0) {
-				if (filename.size() == 0) {
-					throw "no filename";
-				}
-				cout << filename << "\n";
-				file->import(filename);
-			}
-			delete file;
-		}
-		*/
 	}
 	delete fs;
 	return d;
@@ -231,6 +200,16 @@ void unpack(filesystem * fs, const string & dir_file)
 		atrdir << "FORMAT " << fs->name() << "\n";
 	}
 
+	string boot_filename = "boot.bin";
+	atrdir << "BOOT " << boot_filename << "\n";
+	fs->get_disk()->save_boot(boot_filename);
+
+	for (auto prop = fs->properties(); prop->name; prop++) {
+		string value = fs->get_property(prop);
+		atrdir << prop->name << " " << value << "\n";
+	}
+
+	auto dos_first_sector = fs->get_dos_first_sector();
 
 	auto it = fs->root_dir();
 	int name_idx = 1;
@@ -245,6 +224,12 @@ void unpack(filesystem * fs, const string & dir_file)
 				atrdir << name;
 			} else {
 
+				auto file = it->open_file();
+				
+				if (file->first_sector() == dos_first_sector) {
+					atrdir << "DOS ";
+				}
+
 				if (name.find('\\') != string::npos) {
 					ostringstream s;
 					s << "F" << name_idx << ".bin";
@@ -258,7 +243,6 @@ void unpack(filesystem * fs, const string & dir_file)
 					atrdir << name;
 				}
 
-				auto file = it->open_file();
 				file->save(name);
 				delete file;
 			}
@@ -294,12 +278,12 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[x], "list") == 0) {
 			x++;
 			auto d = disk::load(argv[x++]);
-			auto fs = new dos2(d);
+			auto fs = detect_filesystem(d);
 			unpack(fs, "");
 		} else if (strcmp(argv[x], "pack") == 0) {
 			x++;
 			string atr = argv[x++];
-			string dir = "atr.dir";
+			string dir = "dir.txt";
 			if (x < argc) {
 				dir = argv[x++];
 			}
@@ -309,12 +293,12 @@ int main(int argc, char *argv[])
 		} else if (strcmp(argv[x], "unpack") == 0) {
 			x++;
 			string atr = argv[x++];
-			string dir = "atr.dir";
+			string dir = "dir.txt";
 			if (x < argc) {
 				dir = argv[x++];
 			}
 			auto d = disk::load(atr);
-			auto fs = new dos2(d);
+			auto fs = detect_filesystem(d);
 			unpack(fs, dir);
 		}
 	}

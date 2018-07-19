@@ -36,6 +36,18 @@ Possible values are:
  * II+
 
 ```
+
+## Filesystem parameters
+
+Depending on file system, there may be additional parameters (BUFFERS, RAMDISK etc.)
+Parameter is followed by hexadecimal number starting with $.
+
+For example.
+'''
+BUFFERS $02
+'''
+
+
 [BIN|DOS|] filename [atarifilename]
 ```
 
@@ -57,3 +69,21 @@ If necessary, we can specify filename, as it should appear on atari. We can \ as
 \<spc> space
 \\   backslash
 ```
+
+## DOS II+
+
+BUFFERS num
+
+Number of 128 bytes buffers (and open files).
+MemLo depends on it!
+
+RAMDISK $yx
+
+$8x -> 128KB , 1009 sectors in Medium Density 
+$2x -> 64KB (130XE), 499 sectors in Single Density 
+$4x -> 16KB (normal XL/XE) memory under ROM-OS 
+
+x -> 
+If it's 1, RAMdisk will be formated after DOS will load. 
+If it's a 0 RAMdisk will not be formated 
+and if it's 8, the RAMdisk will be write protected (very useful...)

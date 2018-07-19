@@ -28,11 +28,28 @@ std::string dos_IIplus::name()
 	return "dosII+";
 }
 
+static const filesystem::property dos_props[2] = 
+{
+	{ "DOSSEC_LO",   1, 0x03D, 1 },
+	{ "DOSSEC_HI",   1, 0x03F, 1 }
+};
+
+void dos_IIplus::set_dos_first_sector(disk::sector_num sector) 
+{
+	set_property(&dos_props[0], sector & 0xff);
+	set_property(&dos_props[0], (sector >> 8) & 0xff);
+}
+
+disk::sector_num dos_IIplus::get_dos_first_sector()
+{
+	auto lo = get_property_byte(&dos_props[0]);
+	auto hi = get_property_byte(&dos_props[1]);
+	return ((int)hi * 256) + lo;
+}
+
 const filesystem::property * dos_IIplus::properties()
 {
 	static const filesystem::property props[] = {
-		{ "DOSSEC_LO",   1, 0x0739, 1 },
-		{ "DOSSEC_HI",   1, 0x073f, 1 },
 
 		{ "BUFFERS", 1, 0x09, 1 },
 		/*
@@ -63,6 +80,15 @@ const filesystem::property * dos_IIplus::properties()
 	};
 
 	return props;
+}
+
+bool dos_IIplus::detect(disk * d)
+{
+	auto buf = new byte[d->sector_size()];
+	d->read_sector(1, buf);
+	bool a = buf[0] == 0xc4 && buf[0x3c] == 0xA0 && buf[0x3e] == 0xA9;
+	delete[] buf;
+	return a;
 }
 
 dos_IIplus::dos_IIplus(disk * d) : dos2(d)

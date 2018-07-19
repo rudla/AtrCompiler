@@ -49,6 +49,10 @@ public:
 	const property * properties();
 
 	static filesystem * format(disk * d);
+	static bool detect(disk * d);
+
+	disk::sector_num get_dos_first_sector() override;
+	void set_dos_first_sector(disk::sector_num sector) override;
 
 	void vtoc_init();
 	void vtoc_format();

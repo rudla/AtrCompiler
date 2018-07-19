@@ -53,6 +53,11 @@ dos2::~dos2()
 	delete[] vtoc_buf;
 }
 
+bool dos2::detect(disk * d)
+{
+	return true; // this is default
+}
+
 filesystem * dos2::format(disk * d)
 {
 

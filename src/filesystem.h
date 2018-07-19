@@ -25,10 +25,13 @@ public:
 	const property * find_property(const std::string & name);
 	void set_property(const property * prop, const std::string & value);
 	void set_property(const property * prop, int value);
-	byte get_property_byte(const char * name);
+	byte get_byte(disk::sector_num sector, size_t offset);
+	size_t get_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset);
+	byte get_property_byte(const property * prop);
+	std::string get_property(const property * prop);
 
-	void set_dos(disk::sector_num sector);
-	disk::sector_num get_dos();
+	virtual void set_dos_first_sector(disk::sector_num sector) {}
+	virtual disk::sector_num get_dos_first_sector() { return 0; }
 
 	class file
 	{
