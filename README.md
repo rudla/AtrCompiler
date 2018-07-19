@@ -85,11 +85,12 @@ MemLo depends on it!
 ```
 RAMDISK $yx
 ```
-$8x -> 128KB , 1009 sectors in Medium Density 
-$2x -> 64KB (130XE), 499 sectors in Single Density 
-$4x -> 16KB (normal XL/XE) memory under ROM-OS 
+
+ * $8x -> 128KB , 1009 sectors in Medium Density
+ * $2x -> 64KB (130XE), 499 sectors in Single Density 
+ * $4x -> 16KB (normal XL/XE) memory under ROM-OS 
 
 x -> 
-If it's 1, RAMdisk will be formated after DOS will load. 
-If it's a 0 RAMdisk will not be formated 
-and if it's 8, the RAMdisk will be write protected (very useful...)
+ * If it's 1, RAMdisk will be formated after DOS will load. 
+ * If it's a 0 RAMdisk will not be formated 
+ * and if it's 8, the RAMdisk will be write protected
