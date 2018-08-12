@@ -40,6 +40,7 @@ Possible values are:
  * 2.0
  * 2.5
  * II+
+ * sparta
 
 ## Filesystem parameters
 
@@ -94,3 +95,13 @@ x ->
  * If it's 1, RAMdisk will be formated after DOS will load. 
  * If it's a 0 RAMdisk will not be formated 
  * and if it's 8, the RAMdisk will be write protected
+
+## Sparta Dos
+
+Currently only read only support.
+
+'''
+NAME text
+'''
+
+Up to 8-character long volume name.
