@@ -42,7 +42,7 @@ Possible values are:
  * II+
  * sparta
 
-## Filesystem parameters
+### Filesystem parameters
 
 Depending on file system, there may be additional parameters (BUFFERS, RAMDISK etc.)
 Parameter is followed by hexadecimal number starting with $.
@@ -53,6 +53,7 @@ For example.
 BUFFERS $02
 ```
 
+### Files
 ```
 [BIN|DOS|] filename [atarifilename]
 ```
@@ -100,8 +101,8 @@ x ->
 
 Currently only read only support.
 
-'''
+```
 NAME text
-'''
+```
 
 Up to 8-character long volume name.
