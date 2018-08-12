@@ -9,9 +9,14 @@ disk * filesystem::get_disk()
 	return d;
 }
 
-void filesystem::file::write(byte * data, size_t size)
+void filesystem::file::write(const byte * data, size_t size)
 {
 	while (size--) write(*data++);
+}
+
+void filesystem::file::read(byte * data, size_t size)
+{
+	while (size--) *data++ = read();
 }
 
 void filesystem::file::save(const string & filename)
@@ -101,10 +106,85 @@ string filesystem::get_property(const property * prop)
 		t = get_byte(prop->sector, prop->offset);
 		txt[0] = '$';
 		char h[3];
-		_itoa_s<3>((int)t, h, 16);		
+		sprintf(h, "%02x", (int)t);
 		txt[1] = h[0];
 		txt[2] = h[1];
 		txt[3] = 0;
+	} else if (prop->size > 2) {
+		size_t i;
+		for (i = 0; i < prop->size; i++) {
+			txt[i] = get_byte(prop->sector, prop->offset + i);
+		}
+		txt[i] = 0;
 	}
 	return string(txt);
+}
+
+bool filesystem::format_atari_name(istream & s, char * name, size_t name_len, size_t ext_len)
+/*
+Atari filename format
+
+\i   turn inversion on / off
+\xhh hex char
+\    space
+\\   backslash
+*/ {
+	bool inverse = false;
+	auto len = name_len + ext_len;
+
+	for (size_t i = 0; i < len; i++) name[i] = ' ';
+	name[len] = 0;
+	size_t i = 0;
+	char c;
+	bool atascii = false;
+
+	while (s.get(c)) {
+		if (c == ' ') {
+			if (i == 0) continue;
+			else break;
+		}
+		if (c == '\\') {
+			s.get(c);
+			switch (c) {
+			case 'i':
+				inverse = !inverse;
+				continue;
+			case 'x':
+				char h[3];
+				s.get(h, 3);
+				c = std::stoi(h, nullptr, 16);
+				atascii = true;
+				break;
+			}
+		} else if (c == '.' && i <= name_len) {
+			i = name_len;
+			continue;
+		}
+		if (i > len) {
+			throw "filename too long";
+		}
+		name[i] = c | (inverse ? 128 : 0);
+		i++;
+	}
+	return i > 0;
+}
+
+filesystem::dir * filesystem::dir::open_dir()
+{
+	throw "not_a_dir";
+}
+
+bool  filesystem::dir::is_dir()
+{
+	return false;
+}
+
+bool  filesystem::dir::is_deleted()
+{
+	return false;
+}
+
+disk::sector_num filesystem::free_sector_count()
+{
+	return 0;
 }

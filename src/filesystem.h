@@ -1,6 +1,7 @@
 #pragma once
 #include "disk.h"
 #include <string>
+#include <istream>
 
 class filesystem
 {
@@ -8,9 +9,6 @@ public:
 	filesystem(disk * d) : d(d) {}
 	virtual ~filesystem() {};
 	virtual std::string name() = 0;
-
-	const char * dos_lo = "DOSSEC_LO";
-	const char * dos_hi = "DOSSEC_HI";
 
 	struct property
 	{
@@ -30,6 +28,8 @@ public:
 	byte get_property_byte(const property * prop);
 	std::string get_property(const property * prop);
 
+	virtual disk::sector_num free_sector_count();
+
 	virtual void set_dos_first_sector(disk::sector_num sector) {}
 	virtual disk::sector_num get_dos_first_sector() { return 0; }
 
@@ -39,7 +39,8 @@ public:
 		virtual bool eof() = 0;
 		virtual byte read() = 0;
 		virtual void write(byte b) = 0;
-		virtual void write(byte * data, size_t size);
+		void read(byte * data, size_t size);
+		virtual void write(const byte * data, size_t size);
 		void save(const std::string & filename);
 		void import(const std::string & filename);
 		virtual ~file() {};
@@ -54,6 +55,10 @@ public:
 		virtual void next() = 0;
 		virtual bool at_end() = 0;
 		virtual file * open_file() = 0;
+		virtual size_t size() = 0;
+		virtual dir * open_dir();
+		virtual bool  is_dir();
+		virtual bool  is_deleted();
 	};
 
 	disk * get_disk();
@@ -67,6 +72,8 @@ public:
 	disk::sector_num sector_count() {
 		return d->sector_count();
 	}
+
+	static bool format_atari_name(std::istream & s, char * name, size_t name_len, size_t ext_len);
 
 protected:
 

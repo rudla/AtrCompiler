@@ -119,3 +119,28 @@ void disk::save_boot(const std::string & filename)
 		f.write((char *)buf, 128);
 	}
 }
+
+disk::sector::sector(disk & d, sector_num num) : d(d), num(num), dirty(false)
+{
+	buf = new byte[d.sector_size()];
+	d.read_sector(num, buf);
+}
+
+void disk::sector::write()
+{
+	if (dirty) {
+		d.write_sector(num, buf);
+		dirty = false;
+	}
+}
+
+disk::sector::~sector()
+{
+	write();
+	delete[] buf;
+}
+
+disk::sector * disk::get_sector(sector_num num)
+{
+	return new disk::sector(*this, num);
+}

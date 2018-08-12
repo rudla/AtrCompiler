@@ -62,6 +62,8 @@ public:
 		std::string name() override;
 		size_t sec_size() override;
 		file * open_file() override;
+		size_t size() override;
+		bool is_deleted() override;
 
 	private:
 		dos2 & fs;

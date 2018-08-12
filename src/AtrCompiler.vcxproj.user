@@ -10,7 +10,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>unpack FLOP_61A.ATR dir_a.txt</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>list flop_dos_free.atr</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>p:\Atari\AtrCompiler\folder2</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>

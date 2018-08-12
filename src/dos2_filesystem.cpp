@@ -96,22 +96,24 @@ bool dos2::dos2_dir::at_end()
 	return sector > fs.dir_end;
 }
 
+bool dos2::dos2_dir::is_deleted()
+{
+	return (buf[pos] & FLAG_DELETED) != 0;
+}
+
 void dos2::dos2_dir::next()
 {
-	do {
-		pos += 16;
-		if (pos == fs.sector_size()) {
-			sector++;
-			if (at_end()) return;
-			fs.read_sector(sector, buf);
-			pos = 0;
-		}
-		file_no++;
-		if (buf[pos] == 0) {
-			sector = fs.dir_end + 1;
-			break;
-		}
-	} while ((buf[pos] & FLAG_DELETED) != 0);
+	pos += 16;
+	if (pos == fs.sector_size()) {
+		sector++;
+		if (at_end()) return;
+		fs.read_sector(sector, buf);
+		pos = 0;
+	}
+	file_no++;
+	if (buf[pos] == 0) {
+		sector = fs.dir_end + 1;
+	}
 }
 
 std::string dos2::dos2_dir::name()
@@ -154,6 +156,11 @@ std::string dos2::dos2_dir::name()
 size_t dos2::dos2_dir::sec_size()
 {
 	return read_word(buf, pos+1);
+}
+
+size_t dos2::dos2_dir::size()
+{
+	return sec_size() * 125;
 }
 
 filesystem::file * dos2::dos2_dir::open_file()

@@ -5,8 +5,34 @@
 #include <memory>
 #include "dos2_filesystem.h"
 #include "dos_IIplus.h"
+#include "sparta_dos.h"
+
+
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 using namespace std;
+
+
+void make_dir(const std::string & name)
+{
+#if defined(_WIN32)
+	_mkdir(name.c_str());
+#else 
+	mkdir(name.c_str(), 0777);
+#endif
+}
+
+void change_dir(const std::string & name)
+{
+#if defined(_WIN32)
+	_chdir(name.c_str());
+#else 
+	chdir(name.c_str());
+#endif
+}
+
 
 /*
 
@@ -30,60 +56,13 @@ enum class file_format {
 	dos
 };
 
-bool format_atari_name(istringstream & s, char * name, size_t name_len, size_t ext_len)
-/*
-  Atari filename format
-
-  \i   turn inversion on / off
-  \xhh hex char
-  \    space
-  \\   backslash
-*/{
-	bool inverse = false;
-	auto len = name_len + ext_len;
-
-	for (size_t i = 0; i < len; i++) name[i] = ' ';
-	name[len] = 0;
-	size_t i = 0;
-	char c;
-	bool atascii = false;
-
-	while (s.get(c)) {
-		if (c == ' ') {
-			if (i == 0) continue;
-			else break;
-		}
-		if (c == '\\') {
-			s.get(c);
-			switch (c) {
-			case 'i':
-				inverse = !inverse;
-				continue;
-			case 'x':
-				char h[3];
-				s.get(h, 3);
-				c = std::stoi(h, nullptr, 16);
-				atascii = true;
-				break;
-			}
-		} else if (c == '.' && i <= name_len) {
-			i = name_len;
-			continue;
-		}
-		if (i > len) {
-			throw "filename too long";
-		}
-		name[i] = c | (inverse ? 128 : 0);
-		i++;
-	}
-	return i > 0;
-}
-
 filesystem * detect_filesystem(disk * d)
 {
 	filesystem * fs;
 	if (dos_IIplus::detect(d)) {
 		fs = new dos_IIplus(d);
+	} else if (sparta_dos::detect(d)) {
+		fs = new sparta_dos(d);
 	} else {
 		fs = new dos2(d);
 	}
@@ -129,6 +108,8 @@ disk * pack(const string dir_filename)
 				fs = dos_IIplus::format(d);
 			} else if (dos_type == "2.5" || dos_type == "2.0") {
 				fs = dos2::format(d);
+			} else if (dos_type == "sparta") {
+				fs = sparta_dos::format(d);
 			} else {
 				throw "Unknown dos format";
 			}
@@ -162,9 +143,9 @@ disk * pack(const string dir_filename)
 		// parse atari name
 
 		char name[12];
-		if (!format_atari_name(s, name, 8, 3)) {
+		if (!filesystem::format_atari_name(s, name, 8, 3)) {
 			istringstream fs(filename);
-			format_atari_name(fs, name, 8, 3);
+			filesystem::format_atari_name(fs, name, 8, 3);
 		}
 
 		auto file = fs->create_file(name);
@@ -181,8 +162,77 @@ disk * pack(const string dir_filename)
 		}
 		delete file;
 	}
+
 	delete fs;
 	return d;
+}
+
+void unpack_dir(filesystem::dir * dir, ofstream & atrdir, int nesting, disk::sector_num dos_first_sector)
+{
+	int name_idx = 1;
+	for (; !dir->at_end(); dir->next()) {
+
+		if (dir->is_deleted()) continue;
+
+		string name = dir->name();
+
+		for (int i = 0; i < nesting; i++) {
+			cout << " | ";
+			if (atrdir.is_open()) {
+				atrdir << " | ";
+			}
+		}
+
+		cout << name << " ";
+
+		if (dir->is_dir()) {
+			cout << " /\n";
+			auto subdir = dir->open_dir();
+			if (atrdir.is_open()) {
+				atrdir << "/ " << name << "\n";
+				make_dir(name);
+				change_dir(name.c_str());
+			}
+			unpack_dir(subdir, atrdir, nesting + 1, dos_first_sector);
+			delete subdir;
+			if (atrdir.is_open()) {
+				change_dir("..");
+			}
+		} else {
+			cout << dir->size() << "\n";
+
+			if (atrdir.is_open()) {
+				if (dir->size() == 0) {
+					atrdir << "--- ";
+					atrdir << name;
+				} else {
+
+					auto file = dir->open_file();
+
+					if (file->first_sector() == dos_first_sector) {
+						atrdir << "DOS ";
+					}
+
+					if (name.find('\\') != string::npos) {
+						ostringstream s;
+						s << "F" << name_idx << ".bin";
+						auto p = name.find('.');
+						if (p != string::npos) {
+							s << name.substr(p);
+						}
+						atrdir << s.str() << " " << name;
+						name = s.str();
+					} else {
+						atrdir << name;
+					}
+
+					file->save(name);
+					delete file;
+				}
+				atrdir << "\n";
+			}
+		}
+	}
 }
 
 void unpack(filesystem * fs, const string & dir_file)
@@ -211,45 +261,14 @@ void unpack(filesystem * fs, const string & dir_file)
 
 	auto dos_first_sector = fs->get_dos_first_sector();
 
-	auto it = fs->root_dir();
-	int name_idx = 1;
-	for (; !it->at_end(); it->next()) {
-		string name = it->name();
+	auto dir = fs->root_dir();
 
-		cout << name << " " << it->sec_size() << "\n";
+	unpack_dir(dir, atrdir, 0, dos_first_sector);
 
-		if (atrdir.is_open()) {
-			if (it->sec_size() == 0) {
-				atrdir << "--- ";
-				atrdir << name;
-			} else {
+	delete dir;
 
-				auto file = it->open_file();
-				
-				if (file->first_sector() == dos_first_sector) {
-					atrdir << "DOS ";
-				}
+	cout << "\n" << "free sectors: " << fs->free_sector_count() << "\n";
 
-				if (name.find('\\') != string::npos) {
-					ostringstream s;
-					s << "F" << name_idx << ".bin";
-					auto p = name.find('.');
-					if (p != string::npos) {
-						s << name.substr(p);
-					}
-					atrdir << s.str() << " " << name;
-					name = s.str();					
-				} else {
-					atrdir << name;
-				}
-
-				file->save(name);
-				delete file;
-			}
-			atrdir << "\n";
-		}
-	}
-	delete it;
 }
 
 const string help =

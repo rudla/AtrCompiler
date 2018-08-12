@@ -1,5 +1,6 @@
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <cstring>
 #include <stdint.h>
 #include <string>
@@ -52,6 +53,21 @@ public:
 
 	void install_boot(const std::string & filename);
 	void save_boot(const std::string & filename);
+
+
+	struct sector {
+		disk & d;
+		sector_num num;
+		bool dirty;
+		byte * buf;
+
+		sector(disk & d, sector_num num);
+		~sector();
+		void write();
+
+	};
+
+	sector * get_sector(sector_num num);
 
 private:
 	byte * sector_ptr(size_t num) {

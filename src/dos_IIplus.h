@@ -19,18 +19,33 @@ VTOC is in sectors 359, 360
 
 ## Boot sector
 
-$700   DOS version = 'X'
-$709   XBUF (number of buffers)
+### $00 DOS version
 
-XOPT = $70B Optionen 
+DOS II+ version is $C4.
 
-Dieses Byte steuert einige spezielle Funktionen des XDOS, und zwar wie folgt (alle Werte sind hexadezimal angegeben): 
-+20 RAM-Disk D8: beim Booten nicht löschen +10 Disks in mittlere Dichte beim Formatieren/Löschen MyDOS-kompatibel einrichten (statt DOS 2.5-kompatibel) +02 Titelinfos beim Aufruf des DUP nicht anzeigen +01 Im DUP das Directory immer automatisch zweispaltig anzeigen
-Standardmäßig steht dieses Byte auf 00. Zum Ändern die gewünschten Optionen addieren und in $70B eintragen.
+### $09 Buffer count
 
-XCOL = $710 Text-Hintergrundfarbe 
+Number of 128 bytes buffers (and open files).
+MemLo depends on it!
 
-Ist dieses Byte nicht 0, legt es die Text-Hintergrundfarbe fest. 0 bedeutet die Standardhintergrundfarbe.
+### $0E RAMdisk type
+$8x -> 128KB , 1009 sectors in Medium Density
+$2x -> 64KB (130XE), 499 sectors in Single Density
+$4x -> 16KB (normal XL/XE) memory under ROM-OS
+
+x ->
+If it's 1, RAMdisk will be formated after DOS will load.
+If it's a 0 RAMdisk will not be formated
+and if it's 8, the RAMdisk will be write protected (very useful...)
+
+
+First sector for DOS is specified by following code:
+
+073C: A0, 05    LDY #$05
+073E: A9, 00    LDA #$00
+0740: 20, 71, 07 JSR $0771
+
+To specify the boot start, we must therefore set LO,HI to $073D, $073f. (Byte $3D and $3F on sector 1.)
 
 
 */
@@ -54,6 +69,8 @@ public:
 	disk::sector_num get_dos_first_sector() override;
 	void set_dos_first_sector(disk::sector_num sector) override;
 
+	disk::sector_num free_sector_count() override;
+
 	void vtoc_init();
 	void vtoc_format();
 	void vtoc_read();
@@ -64,28 +81,3 @@ public:
 	bool enhanced_vtoc();
 };
 
-
-/*
-
-DISKCMD: Processing command: Unit 32, Command 53, Aux data 68 01 Get Status
-DISKCMD: Processing command: Unit 32, Command 52, Aux data 69 01 Read Sector
-DISKCMD: Processing command: Unit 32, Command 52, Aux data 68 01 Read Sector
-DISKCMD: Processing command: Unit 32, Command 53, Aux data 68 01 Get Status
-DISKCMD: Processing command: Unit 32, Command 4F, Aux data 68 01 Write PERCOM Block
-DISKCMD: Processing command: Unit 32, Command 22, Aux data 68 01 Format Medium Density
-DISKCMD: Processing command: Unit 32, Command 53, Aux data 68 01 Get Status
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 70 01 Write Sector 368
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 6F 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 6E 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 6D 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 6C 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 6B 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 6A 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 69 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 68 01
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 67 01 Write sector 359
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 01 00 Boot
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 02 00
-DISKCMD: Processing command: Unit 32, Command 50, Aux data 03 00
-
-*/

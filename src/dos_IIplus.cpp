@@ -1,15 +1,3 @@
-/*
-
-First sector for DOS is specified by following code:
-
- 073C: A0, 05    LDY #$05
- 073E: A9, 00    LDA #$00
- 0740: 20, 71, 07 JSR $0771
-
- To specify the boot start, we must therefore set LO,HI to $073D, $073f.
-
-*/
-
 #include "dos_IIplus.h"
 
 const size_t VTOC_BUF_SIZE = 256;
@@ -52,23 +40,7 @@ const filesystem::property * dos_IIplus::properties()
 	static const filesystem::property props[] = {
 
 		{ "BUFFERS", 1, 0x09, 1 },
-		/*
-			=== $0709 Number of 128 bytes buffers (and open files).
-			MemLo depends on it!
-		*/
-
 		{ "RAMDISK", 1, 0x0E, 1 },
-		/* 
-			=== $070E RAMdisk type 
-			$8x -> 128KB , 1009 sectors in Medium Density 
-			$2x -> 64KB (130XE), 499 sectors in Single Density 
-			$4x -> 16KB (normal XL/XE) memory under ROM-OS 
-			
-			x -> 
-			If it's 1, RAMdisk will be formated after DOS will load. 
-			If it's a 0 RAMdisk will not be formated 
-			and if it's 8, the RAMdisk will be write protected (very useful...)
-		*/
 		{ nullptr, 0, 0, 0 }
 
 		/*
@@ -165,8 +137,8 @@ void dos_IIplus::vtoc_format()
 disk::sector_num dos_IIplus::alloc_sector()
 /*
 Purpose:
-Find free sector on the disk and return it's number.
-Mark the sector as used and decrement number of free sectors in the VTOC table.
+	Find free sector on the disk and return it's number.
+	Mark the sector as used and decrement number of free sectors in the VTOC table.
 */
 {
 	disk::sector_num sec = 0;
@@ -187,4 +159,9 @@ Mark the sector as used and decrement number of free sectors in the VTOC table.
 		}
 	}
 	throw "disk full";
+}
+
+disk::sector_num dos_IIplus::free_sector_count()
+{
+	return read_word(vtoc_buf, VTOC_FREE_SEC);;
 }

@@ -30,6 +30,9 @@
     <ClCompile Include="dos_IIplus.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sparta_dos.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="disk.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dos_IIplus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sparta_dos.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
