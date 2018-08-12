@@ -12,6 +12,12 @@ AtrCompiler pack   atr_file [dir_file]
 AtrCompiler unpack atr_file [dir_file]
 ```
 
+Default name of dir_file is DIR.TXT.
+
+### Unpacking
+
+When unpacking the disk, filesystem will be autodetected. If the filesystem is not recognized, DOS 2.5 will be used.
+Boot sectors are automatically saved into BOOT.BIN file.
 
 ## Dir file
 Directory file describes format and contents of the created disk. It is composed on commands. Every command is on separate line.
@@ -35,19 +41,18 @@ Possible values are:
  * 2.5
  * II+
 
-```
-
 ## Filesystem parameters
 
 Depending on file system, there may be additional parameters (BUFFERS, RAMDISK etc.)
 Parameter is followed by hexadecimal number starting with $.
 
 For example.
-'''
+
+```
 BUFFERS $02
-'''
+```
 
-
+```
 [BIN|DOS|] filename [atarifilename]
 ```
 
@@ -72,18 +77,20 @@ If necessary, we can specify filename, as it should appear on atari. We can \ as
 
 ## DOS II+
 
+```
 BUFFERS num
-
+```
 Number of 128 bytes buffers (and open files).
 MemLo depends on it!
-
+```
 RAMDISK $yx
+```
 
-$8x -> 128KB , 1009 sectors in Medium Density 
-$2x -> 64KB (130XE), 499 sectors in Single Density 
-$4x -> 16KB (normal XL/XE) memory under ROM-OS 
+ * $8x -> 128KB , 1009 sectors in Medium Density
+ * $2x -> 64KB (130XE), 499 sectors in Single Density 
+ * $4x -> 16KB (normal XL/XE) memory under ROM-OS 
 
 x -> 
-If it's 1, RAMdisk will be formated after DOS will load. 
-If it's a 0 RAMdisk will not be formated 
-and if it's 8, the RAMdisk will be write protected (very useful...)
+ * If it's 1, RAMdisk will be formated after DOS will load. 
+ * If it's a 0 RAMdisk will not be formated 
+ * and if it's 8, the RAMdisk will be write protected
