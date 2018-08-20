@@ -91,6 +91,15 @@ size_t filesystem::get_word(disk::sector_num sector, size_t lo_offset, size_t hi
 	return size_t(hi) * 256 + lo;
 }
 
+void filesystem::write_word(disk::sector_num sector, size_t offset, size_t val)
+{
+	auto buf = new byte[sector_size()];
+	read_sector(sector, buf);
+	set_word(buf, offset, val);
+	write_sector(sector, buf);
+	delete[] buf;
+}
+
 byte filesystem::get_property_byte(const property * prop)
 {
 	return get_byte(prop->sector, prop->offset);

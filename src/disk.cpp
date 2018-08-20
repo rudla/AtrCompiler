@@ -84,7 +84,7 @@ void disk::save(const std::string & filename)
 
 	header[atr_magic] = 0x96;
 	header[atr_magic + 1] = 0x02;
-	auto x = (s_count / 16) & 0xffff;
+	auto x = (s_count * s_size / 16) & 0xffff;
 	set_word(header, atr_disk_size, x);
 	set_word(header, atr_sector_size, s_size);
 

@@ -6,14 +6,16 @@
 #include "dos2_filesystem.h"
 #include "dos_IIplus.h"
 #include "sparta_dos.h"
-
+#include "mydos.h"
 
 #ifdef _WIN32
 #include <direct.h>
+#else
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 using namespace std;
-
 
 void make_dir(const std::string & name)
 {
@@ -63,6 +65,8 @@ filesystem * detect_filesystem(disk * d)
 		fs = new dos_IIplus(d);
 	} else if (sparta_dos::detect(d)) {
 		fs = new sparta_dos(d);
+	} else if (mydos::detect(d)) {
+		fs = new mydos(d);
 	} else {
 		fs = new dos2(d);
 	}

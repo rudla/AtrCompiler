@@ -25,13 +25,15 @@ public:
 	void set_property(const property * prop, int value);
 	byte get_byte(disk::sector_num sector, size_t offset);
 	size_t get_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset);
+	void   write_word(disk::sector_num sector, size_t offset, size_t val);
+
 	byte get_property_byte(const property * prop);
 	std::string get_property(const property * prop);
 
 	virtual disk::sector_num free_sector_count();
 
-	virtual void set_dos_first_sector(disk::sector_num sector) {}
 	virtual disk::sector_num get_dos_first_sector() { return 0; }
+	virtual void set_dos_first_sector(disk::sector_num sector) {}
 
 	class file
 	{

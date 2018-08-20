@@ -127,8 +127,8 @@ void dos_IIplus::vtoc_format()
 		switch_sector_used(VTOC2_SECTOR);
 	}
 
-	for (auto i = dir_start; i <= dir_end; i++) {
-		switch_sector_used(i);
+	for (auto sec = dir_start; sec < dir_start + dir_size; sec++) {
+		switch_sector_used(sec);
 	}
 	vtoc_dirty = true;
 	vtoc_write();

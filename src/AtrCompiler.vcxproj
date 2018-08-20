@@ -120,6 +120,7 @@
     <ClCompile Include="filesystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="dos_IIplus.cpp" />
+    <ClCompile Include="mydos.cpp" />
     <ClCompile Include="sparta_dos.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -127,6 +128,7 @@
     <ClInclude Include="dos2_filesystem.h" />
     <ClInclude Include="dos_IIplus.h" />
     <ClInclude Include="filesystem.h" />
+    <ClInclude Include="mydos.h" />
     <ClInclude Include="sparta_dos.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

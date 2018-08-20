@@ -20,15 +20,16 @@ const size_t VTOC2_FREE_SEC = VTOC2_OFFSET + 122;
 
 std::string dos2::name()
 {
-	return "dos2";
+	return "2.5";
 }
 
 
 const filesystem::property * dos2::properties()
 {
-	static const filesystem::property props[2] = {
-		{ "DOSSEC",   1, 9, 2},
-		{ nullptr, 0, 0, 0}
+	static const filesystem::property props[3] = {
+		{ "DRIVES",   1, 0x0a, 1},
+		{ "BUFFERS",  1, 0x09, 1 },
+	{ nullptr, 0, 0, 0}
 	};
 
 	return props;
@@ -37,9 +38,6 @@ const filesystem::property * dos2::properties()
 dos2::dos2(disk * d) : filesystem(d)
 {
 	dir_buf = new byte[d->sector_size()];
-
-	dir_start = 361;
-	dir_end = 368;
 
 	vtoc_init();
 	vtoc_buf = new byte[VTOC_BUF_SIZE];  // we need only 128 for single density disk
@@ -69,17 +67,20 @@ filesystem * dos2::format(disk * d)
 	return fs;
 }
 
+disk::sector_num dos2::dir_start = 361;
+disk::sector_num dos2::dir_size  = 8;
+
 void dos2::dir_format()
 {
 	// Init DIR
 	memset(dir_buf, 0, sector_size());
-	for (auto i = dir_start; i <= dir_end; i++) {
-		write_sector(i, dir_buf);
+	for (auto sec = dir_start; sec < dir_start + dir_size; sec++) {
+		write_sector(sec, dir_buf);
 	}
 }
 
-dos2::dos2_dir::dos2_dir(dos2 & fs) : fs(fs) {
-	sector = fs.dir_start;
+dos2::dos2_dir::dos2_dir(dos2 & fs, disk::sector_num sector) : fs(fs), sector(sector) {
+	end_sector = sector + dos2::dir_size;
 	file_no = 1;
 	pos = 0;
 	buf = new byte[fs.sector_size()];
@@ -88,12 +89,12 @@ dos2::dos2_dir::dos2_dir(dos2 & fs) : fs(fs) {
 
 filesystem::dir * dos2::root_dir()
 {
-	return new dos2_dir(*this);
+	return new dos2_dir(*this, dir_start);
 }
 
 bool dos2::dos2_dir::at_end()
 {
-	return sector > fs.dir_end;
+	return sector >= end_sector;
 }
 
 bool dos2::dos2_dir::is_deleted()
@@ -112,7 +113,7 @@ void dos2::dos2_dir::next()
 	}
 	file_no++;
 	if (buf[pos] == 0) {
-		sector = fs.dir_end + 1;
+		sector = end_sector;
 	}
 }
 
@@ -180,6 +181,7 @@ dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_po
 	pos = 0;
 	sector = 0;
 	size = 0;
+	created_by_dos2 = true;
 	if (!writing) {
 		sector = first_sec;
 		fs.read_sector(sector, buf);
@@ -189,7 +191,7 @@ dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_po
 filesystem::file * dos2::create_file(char * name)
 {
 	int file_no = 0;
-	for (auto sec = dir_start; sec <= dir_end; sec++) {
+	for (auto sec = dir_start; sec < dir_start+dir_size; sec++) {
 		read_sector(sec, dir_buf);
 		for (size_t i = 0; i < sector_size() ; i += 16) {
 			if (dir_buf[i] == 0 || (dir_buf[i] & FLAG_DELETED)) {
@@ -224,6 +226,9 @@ dos2::dos2_file::~dos2_file()
 		}
 
 		fs.read_sector(dir_sector, buf);
+		buf[dir_pos] = FLAG_IN_USE;
+		if (created_by_dos2) buf[dir_pos] |= FLAG_DOS2;
+
 		set_word(buf, dir_pos + 1, sec_cnt);
 		set_word(buf, dir_pos + 3, first_sec);
 		fs.write_sector(dir_sector, buf);
@@ -258,21 +263,30 @@ disk::sector_num dos2::dos2_file::first_sector()
 	return first_sec;
 }
 
+bool dos2::dos2_file::next_sector()
+{
+	disk::sector_num next = sector_next();
+	if (next == 0) return false;
+
+	sector = next;
+	pos = 0;
+	fs.read_sector(sector, buf);
+	return true;
+}
+
 bool dos2::dos2_file::eof()
 {
-	if (!sector_end()) return false;
-	auto n = sector_next();
-	return n == 0;
+	do {
+		if (!sector_end()) return false;
+	} while (next_sector());	
+	return true;
 }
 
 byte dos2::dos2_file::read()
 {
 	while (sector_end()) {
-		auto next = sector_next();
-		if (!next) throw("EOF");
-		sector = next;
-		pos = 0;
-		fs.read_sector(sector, buf);
+		if (!next_sector())
+			throw("EOF");
 	}
 
 	return buf[pos++];
@@ -359,24 +373,27 @@ void dos2::vtoc_format()
 	vtoc_buf[VTOC_BITMAP] = 0x0f;		// first 4 sectors are always preallocated
 	switch_sector_used(vtoc_sec1);
 	if (vtoc_sec2) {
-		switch_sector_used(720);
+		//switch_sector_used(720);
 		switch_sector_used(vtoc_sec2);
 		set_word(vtoc_buf, VTOC2_FREE_SEC, 303);
 	} else {
 
 	}
-	for (auto i = dir_start; i <= dir_end; i++) {
-		switch_sector_used(i);
+	for (auto sec = dir_start; sec < dir_start+dir_size; sec++) {
+		switch_sector_used(sec);
 	}
+	vtoc_dirty = true;
 }
 
 void dos2::vtoc_write()
 {
-	write_sector(vtoc_sec1, vtoc_buf);
-	if (vtoc_sec2) {
-		write_sector(vtoc_sec2, vtoc_buf + VTOC2_OFFSET);
+	if (vtoc_dirty) {
+		write_sector(vtoc_sec1, vtoc_buf);
+		if (vtoc_sec2) {
+			write_sector(vtoc_sec2, vtoc_buf + VTOC2_OFFSET);
+		}
 	}
-	vtoc_dirty = 0;
+	vtoc_dirty = false;
 }
 
 void dos2::vtoc_read()
@@ -385,7 +402,7 @@ void dos2::vtoc_read()
 	if (vtoc_sec2) {
 		read_sector(vtoc_sec2, vtoc_buf + VTOC2_OFFSET);
 	}
-	vtoc_dirty = 0;
+	vtoc_dirty = false;
 }
 
 disk::sector_num dos2::alloc_sector()
@@ -414,4 +431,23 @@ Purpose:
 		}
 	}
 	throw "disk full";
+}
+
+disk::sector_num dos2::free_sector_count()
+{
+	disk::sector_num cnt = read_word(vtoc_buf, VTOC_FREE_SEC);
+	if (vtoc_sec2) {
+		cnt += read_word(vtoc_buf, VTOC2_FREE_SEC);
+	}
+	return cnt;
+}
+
+disk::sector_num dos2::get_dos_first_sector() 
+{ 
+	return get_word(1, 0x0f, 0x10); 
+}
+
+void dos2::set_dos_first_sector(disk::sector_num sector) 
+{
+	return write_word(1, 0x0f, sector);
 }
