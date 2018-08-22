@@ -115,21 +115,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="disk.cpp" />
-    <ClCompile Include="dos2_filesystem.cpp" />
-    <ClCompile Include="filesystem.cpp" />
+    <ClCompile Include="..\libatr\disk.cpp" />
+    <ClCompile Include="..\libatr\dos2_filesystem.cpp" />
+    <ClCompile Include="..\libatr\dos_IIplus.cpp" />
+    <ClCompile Include="..\libatr\filesystem.cpp" />
+    <ClCompile Include="..\libatr\libatr.cpp" />
+    <ClCompile Include="..\libatr\mydos.cpp" />
+    <ClCompile Include="..\libatr\sparta_dos.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="dos_IIplus.cpp" />
-    <ClCompile Include="mydos.cpp" />
-    <ClCompile Include="sparta_dos.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="disk.h" />
-    <ClInclude Include="dos2_filesystem.h" />
-    <ClInclude Include="dos_IIplus.h" />
-    <ClInclude Include="filesystem.h" />
-    <ClInclude Include="mydos.h" />
-    <ClInclude Include="sparta_dos.h" />
+    <ClInclude Include="..\libatr\disk.h" />
+    <ClInclude Include="..\libatr\dos2_filesystem.h" />
+    <ClInclude Include="..\libatr\dos_IIplus.h" />
+    <ClInclude Include="..\libatr\filesystem.h" />
+    <ClInclude Include="..\libatr\libatr.h" />
+    <ClInclude Include="..\libatr\mydos.h" />
+    <ClInclude Include="..\libatr\sparta_dos.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

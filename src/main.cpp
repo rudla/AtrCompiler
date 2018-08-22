@@ -3,10 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <memory>
-#include "dos2_filesystem.h"
-#include "dos_IIplus.h"
-#include "sparta_dos.h"
-#include "mydos.h"
+#include "../libatr/libatr.h"
 
 #ifdef _WIN32
 #include <direct.h>
@@ -58,21 +55,6 @@ enum class file_format {
 	dos
 };
 
-filesystem * detect_filesystem(disk * d)
-{
-	filesystem * fs;
-	if (dos_IIplus::detect(d)) {
-		fs = new dos_IIplus(d);
-	} else if (sparta_dos::detect(d)) {
-		fs = new sparta_dos(d);
-	} else if (mydos::detect(d)) {
-		fs = new mydos(d);
-	} else {
-		fs = new dos2(d);
-	}
-	return fs;
-}
-
 disk * pack(const string dir_filename)
 {
 
@@ -108,15 +90,7 @@ disk * pack(const string dir_filename)
 		} else if (filename == "FORMAT") {
 			s >> dos_type;
 			if (!d) d = new disk(sector_size, sector_count);
-			if (dos_type == "II+") {
-				fs = dos_IIplus::format(d);
-			} else if (dos_type == "2.5" || dos_type == "2.0") {
-				fs = dos2::format(d);
-			} else if (dos_type == "sparta") {
-				fs = sparta_dos::format(d);
-			} else {
-				throw "Unknown dos format";
-			}
+			fs = install_filesystem(d, dos_type);
 			continue;
 
 		} else if (filename == "BOOT") {

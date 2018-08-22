@@ -5,56 +5,57 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="libatr">
+      <UniqueIdentifier>{0d9efd3e-2e12-4662-8878-45f0cea5399d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dos2_filesystem.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\libatr\disk.cpp">
+      <Filter>libatr</Filter>
     </ClCompile>
-    <ClCompile Include="disk.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\libatr\dos_IIplus.cpp">
+      <Filter>libatr</Filter>
     </ClCompile>
-    <ClCompile Include="filesystem.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\libatr\dos2_filesystem.cpp">
+      <Filter>libatr</Filter>
     </ClCompile>
-    <ClCompile Include="dos_IIplus.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\libatr\filesystem.cpp">
+      <Filter>libatr</Filter>
     </ClCompile>
-    <ClCompile Include="sparta_dos.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\libatr\mydos.cpp">
+      <Filter>libatr</Filter>
     </ClCompile>
-    <ClCompile Include="mydos.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\libatr\sparta_dos.cpp">
+      <Filter>libatr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libatr\libatr.cpp">
+      <Filter>libatr</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="disk.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\libatr\disk.h">
+      <Filter>libatr</Filter>
     </ClInclude>
-    <ClInclude Include="dos2_filesystem.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\libatr\dos_IIplus.h">
+      <Filter>libatr</Filter>
     </ClInclude>
-    <ClInclude Include="filesystem.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\libatr\dos2_filesystem.h">
+      <Filter>libatr</Filter>
     </ClInclude>
-    <ClInclude Include="dos_IIplus.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\libatr\filesystem.h">
+      <Filter>libatr</Filter>
     </ClInclude>
-    <ClInclude Include="sparta_dos.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\libatr\mydos.h">
+      <Filter>libatr</Filter>
     </ClInclude>
-    <ClInclude Include="mydos.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\libatr\sparta_dos.h">
+      <Filter>libatr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libatr\libatr.h">
+      <Filter>libatr</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
