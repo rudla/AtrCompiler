@@ -50,8 +50,8 @@ const filesystem::property * sparta_dos::properties()
 sparta_dos::sparta_dos(disk * d) : filesystem(d)
 {
 	disk::sector * s = d->get_sector(1);
-	dir_sector = read_word(s->buf, DIR_SECTOR);
-	free_count = read_word(s->buf, FREE_SECTOR_COUNT);
+	dir_sector = peek_word(s->buf, DIR_SECTOR);
+	free_count = peek_word(s->buf, FREE_SECTOR_COUNT);
 	delete s;
 }
 
@@ -202,12 +202,12 @@ std::string sparta_dos::sparta_dos_dir::name()
 
 size_t sparta_dos::sparta_dos_dir::size()
 {
-	return  read_word(buf, dir_file_size) + 0x10000 * buf[dir_file_size + 2];
+	return  peek_word(buf, dir_file_size) + 0x10000 * buf[dir_file_size + 2];
 }
 
 disk::sector_num sparta_dos::sparta_dos_dir::first_sector()
 {
-	return read_word(buf, dir_first_sector);
+	return peek_word(buf, dir_first_sector);
 }
 
 size_t sparta_dos::sparta_dos_dir::sec_size()
@@ -298,11 +298,11 @@ disk::sector_num sparta_dos::sparta_dos_file::sector_next()
 	map_offset += 2;
 	if (map_offset == fs.sector_size()) {
 		map_offset = 4;
-		sector_map = read_word(map_buf, 0);
+		sector_map = peek_word(map_buf, 0);
 		if (sector_map == 0) return 0;
 	}
 
-	disk::sector_num x = read_word(map_buf, map_offset);
+	disk::sector_num x = peek_word(map_buf, map_offset);
 	return x;
 }
 

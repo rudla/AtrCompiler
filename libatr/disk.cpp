@@ -50,8 +50,8 @@ disk * disk::load(const std::string & filename)
 	f.read((char*)header, atr_header_size);
 
 	if (header[atr_magic] != 0x96 || header[atr_magic + 1] != 0x02) throw("This file is not an Atari dosk file.");	
-	size_t size = (read_word(header, atr_disk_size_hi) << 16) + read_word(header, atr_disk_size) * 16;
-	size_t sector_size = read_word(header, atr_sector_size);
+	size_t size = (peek_word(header, atr_disk_size_hi) << 16) + peek_word(header, atr_disk_size) * 16;
+	size_t sector_size = peek_word(header, atr_sector_size);
 	size_t boot_sector_size = (sector_size >= 256 && (size & 0xff) == 0) ? sector_size : 128;
 
 	sector_num sec_count = 3 + (size - 3 * boot_sector_size) / sector_size;
@@ -85,8 +85,8 @@ void disk::save(const std::string & filename)
 	header[atr_magic] = 0x96;
 	header[atr_magic + 1] = 0x02;
 	auto x = (s_count * s_size / 16) & 0xffff;
-	set_word(header, atr_disk_size, x);
-	set_word(header, atr_sector_size, s_size);
+	poke_word(header, atr_disk_size, x);
+	poke_word(header, atr_sector_size, s_size);
 
 	f.write((char *)header, atr_header_size);
 

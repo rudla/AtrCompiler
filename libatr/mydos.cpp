@@ -93,10 +93,10 @@ bool mydos::mydos_dir::is_dir()
 
 filesystem::dir * mydos::mydos_dir::open_dir()
 {
-	return new mydos_dir(fs, read_word(buf, pos + 3));
+	return new mydos_dir(fs, peek_word(buf, pos + 3));
 }
 
 disk::sector_num mydos::free_sector_count()
 {
-	return read_word(vtoc_buf, VTOC_FREE_SEC);;
+	return peek_word(vtoc_buf, VTOC_FREE_SEC);;
 }

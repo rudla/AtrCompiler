@@ -7,8 +7,8 @@
 
 typedef uint8_t byte;
 
-#define set_word(buf, idx, n) buf[idx] = byte((n) & 255); buf[idx+1] = byte((n) >> 8);
-#define read_word(buf, idx) (buf[idx] + buf[idx+1] * 256)
+#define poke_word(buf, idx, n) buf[idx] = byte((n) & 255); buf[idx+1] = byte((n) >> 8);
+#define peek_word(buf, idx) (buf[idx] + buf[idx+1] * 256)
 
 class disk
 {

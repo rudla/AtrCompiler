@@ -11,28 +11,24 @@ const size_t VTOC_BITMAP = 10;
 const disk::sector_num VTOC2_SECTOR = 359;
 const disk::sector_num VTOC_SECTOR = 360;
 
+
+const size_t BOOT_FILE_LO = 0x03d;
+const size_t BOOT_FILE_HI = 0x03f;
+
 std::string dos_IIplus::name()
 {
 	return "II+";
 }
 
-static const filesystem::property dos_props[2] = 
-{
-	{ "DOSSEC_LO",   1, 0x03D, 1 },
-	{ "DOSSEC_HI",   1, 0x03F, 1 }
-};
-
 void dos_IIplus::set_dos_first_sector(disk::sector_num sector) 
 {
-	set_property(&dos_props[0], sector & 0xff);
-	set_property(&dos_props[0], (sector >> 8) & 0xff);
+	write_byte(1, BOOT_FILE_LO, sector & 0xff);
+	write_byte(1, BOOT_FILE_HI, (sector >> 8) & 0xff);
 }
 
 disk::sector_num dos_IIplus::get_dos_first_sector()
 {
-	auto lo = get_property_byte(&dos_props[0]);
-	auto hi = get_property_byte(&dos_props[1]);
-	return ((int)hi * 256) + lo;
+	return read_word(1, BOOT_FILE_LO, BOOT_FILE_HI);
 }
 
 const filesystem::property * dos_IIplus::properties()
@@ -116,8 +112,8 @@ void dos_IIplus::vtoc_format()
 	memset(vtoc_buf, 0, VTOC_BUF_SIZE);
 
 	vtoc_buf[VTOC_DOS_VERSION] = 3; // version?
-	set_word(vtoc_buf, VTOC_CAPACITY, capacity);
-	set_word(vtoc_buf, VTOC_FREE_SEC, capacity);
+	poke_word(vtoc_buf, VTOC_CAPACITY, capacity);
+	poke_word(vtoc_buf, VTOC_FREE_SEC, capacity);
 
 	for (size_t i = 0; i < vtoc_size; i++) vtoc_buf[VTOC_BITMAP + i] = 0xff;
 	vtoc_buf[VTOC_BITMAP] = 0x0f;		// first 4 sectors are always preallocated
@@ -148,9 +144,9 @@ Purpose:
 		for (byte m = 128; m != 0; m /= 2) {
 			if (b & m) {
 				vtoc_buf[VTOC_BITMAP + i] = b ^ m;
-				int free = read_word(vtoc_buf, VTOC_FREE_SEC);
+				int free = peek_word(vtoc_buf, VTOC_FREE_SEC);
 				free--;
-				set_word(vtoc_buf, VTOC_FREE_SEC, free);
+				poke_word(vtoc_buf, VTOC_FREE_SEC, free);
 				vtoc_dirty = true;
 				vtoc_write();
 				return sec;
@@ -163,5 +159,5 @@ Purpose:
 
 disk::sector_num dos_IIplus::free_sector_count()
 {
-	return read_word(vtoc_buf, VTOC_FREE_SEC);;
+	return peek_word(vtoc_buf, VTOC_FREE_SEC);;
 }

@@ -18,6 +18,9 @@ const size_t VTOC_FREE_SEC     = 3;
 const size_t VTOC_BITMAP       = 10;
 const size_t VTOC2_FREE_SEC = VTOC2_OFFSET + 122;
 
+const size_t BOOT_FILE_LO = 0x0f;
+const size_t BOOT_FILE_HI = 0x10;
+
 std::string dos2::name()
 {
 	return "2.5";
@@ -156,7 +159,7 @@ std::string dos2::dos2_dir::name()
 
 size_t dos2::dos2_dir::sec_size()
 {
-	return read_word(buf, pos+1);
+	return peek_word(buf, pos+1);
 }
 
 size_t dos2::dos2_dir::size()
@@ -166,7 +169,7 @@ size_t dos2::dos2_dir::size()
 
 filesystem::file * dos2::dos2_dir::open_file()
 {
-	return new dos2_file(fs, sector, pos, file_no, read_word(buf, pos + 3), sec_size(), false);
+	return new dos2_file(fs, sector, pos, file_no, peek_word(buf, pos + 3), sec_size(), false);
 }
 
 dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_pos, int file_no, disk::sector_num first_sec, disk::sector_num sec_cnt, bool writing) :
@@ -229,8 +232,8 @@ dos2::dos2_file::~dos2_file()
 		buf[dir_pos] = FLAG_IN_USE;
 		if (created_by_dos2) buf[dir_pos] |= FLAG_DOS2;
 
-		set_word(buf, dir_pos + 1, sec_cnt);
-		set_word(buf, dir_pos + 3, first_sec);
+		poke_word(buf, dir_pos + 1, sec_cnt);
+		poke_word(buf, dir_pos + 3, first_sec);
 		fs.write_sector(dir_sector, buf);
 	}
 }
@@ -366,8 +369,8 @@ void dos2::vtoc_format()
 	memset(vtoc_buf, 0, VTOC_BUF_SIZE);
 
 	vtoc_buf[0] = 2;  // DOS_2.0	
-	set_word(vtoc_buf, VTOC_MAX_FREE_SEC, capacity);
-	set_word(vtoc_buf, VTOC_FREE_SEC, 707);
+	poke_word(vtoc_buf, VTOC_MAX_FREE_SEC, capacity);
+	poke_word(vtoc_buf, VTOC_FREE_SEC, 707);
 
 	for (size_t i = 0; i < vtoc_size; i++) vtoc_buf[VTOC_BITMAP + i] = 0xff;
 	vtoc_buf[VTOC_BITMAP] = 0x0f;		// first 4 sectors are always preallocated
@@ -375,7 +378,7 @@ void dos2::vtoc_format()
 	if (vtoc_sec2) {
 		//switch_sector_used(720);
 		switch_sector_used(vtoc_sec2);
-		set_word(vtoc_buf, VTOC2_FREE_SEC, 303);
+		poke_word(vtoc_buf, VTOC2_FREE_SEC, 303);
 	} else {
 
 	}
@@ -420,9 +423,9 @@ Purpose:
 			if (b & m) {
 				vtoc_buf[VTOC_BITMAP + i] = b ^ m;
 				auto off = (sec < 720 || vtoc_sec2 == 0) ? VTOC_FREE_SEC : VTOC2_FREE_SEC;
-				int free = read_word(vtoc_buf, off);
+				int free = peek_word(vtoc_buf, off);
 				free--;
-				set_word(vtoc_buf, off, free);
+				poke_word(vtoc_buf, off, free);
 				vtoc_dirty = true;
 				vtoc_write();
 				return sec;
@@ -435,19 +438,19 @@ Purpose:
 
 disk::sector_num dos2::free_sector_count()
 {
-	disk::sector_num cnt = read_word(vtoc_buf, VTOC_FREE_SEC);
+	disk::sector_num cnt = peek_word(vtoc_buf, VTOC_FREE_SEC);
 	if (vtoc_sec2) {
-		cnt += read_word(vtoc_buf, VTOC2_FREE_SEC);
+		cnt += peek_word(vtoc_buf, VTOC2_FREE_SEC);
 	}
 	return cnt;
 }
 
 disk::sector_num dos2::get_dos_first_sector() 
 { 
-	return get_word(1, 0x0f, 0x10); 
+	return read_word(1, BOOT_FILE_LO, BOOT_FILE_HI);
 }
 
 void dos2::set_dos_first_sector(disk::sector_num sector) 
 {
-	return write_word(1, 0x0f, sector);
+	return write_word(1, BOOT_FILE_LO, sector);
 }

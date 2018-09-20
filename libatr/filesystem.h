@@ -23,9 +23,10 @@ public:
 	const property * find_property(const std::string & name);
 	void set_property(const property * prop, const std::string & value);
 	void set_property(const property * prop, int value);
-	byte get_byte(disk::sector_num sector, size_t offset);
-	size_t get_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset);
-	void   write_word(disk::sector_num sector, size_t offset, size_t val);
+	byte read_byte(disk::sector_num sector, size_t offset);
+	size_t read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset);
+	void write_word(disk::sector_num sector, size_t offset, size_t val);
+	void write_byte(disk::sector_num sector, size_t offset, byte val);
 
 	byte get_property_byte(const property * prop);
 	std::string get_property(const property * prop);

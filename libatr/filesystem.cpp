@@ -69,13 +69,13 @@ void filesystem::set_property(const property * prop, int value)
 	if (prop->size == 1) {
 		buf[prop->offset] = value;
 	} else if (prop->size == 2) {
-		set_word(buf, prop->offset, value);
+		poke_word(buf, prop->offset, value);
 	}
 	write_sector(prop->sector, buf);
 	delete[] buf;
 }
 
-byte filesystem::get_byte(disk::sector_num sector, size_t offset)
+byte filesystem::read_byte(disk::sector_num sector, size_t offset)
 {
 	auto buf = new byte[sector_size()];
 	read_sector(sector, buf);
@@ -84,25 +84,34 @@ byte filesystem::get_byte(disk::sector_num sector, size_t offset)
 	return b;
 }
 
-size_t filesystem::get_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset)
+size_t filesystem::read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset)
 {
-	byte lo = get_byte(sector, lo_offset);
-	byte hi = get_byte(sector, hi_offset);
+	byte lo = read_byte(sector, lo_offset);
+	byte hi = read_byte(sector, hi_offset);
 	return size_t(hi) * 256 + lo;
+}
+
+void filesystem::write_byte(disk::sector_num sector, size_t offset, byte val)
+{
+	auto buf = new byte[sector_size()];
+	read_sector(sector, buf);
+	buf[offset] = val;
+	write_sector(sector, buf);
+	delete[] buf;
 }
 
 void filesystem::write_word(disk::sector_num sector, size_t offset, size_t val)
 {
 	auto buf = new byte[sector_size()];
 	read_sector(sector, buf);
-	set_word(buf, offset, val);
+	poke_word(buf, offset, val);
 	write_sector(sector, buf);
 	delete[] buf;
 }
 
 byte filesystem::get_property_byte(const property * prop)
 {
-	return get_byte(prop->sector, prop->offset);
+	return read_byte(prop->sector, prop->offset);
 }
 
 string filesystem::get_property(const property * prop)
@@ -112,7 +121,7 @@ string filesystem::get_property(const property * prop)
 	txt[0] = 0;
 
 	if (prop->size == 1) {
-		t = get_byte(prop->sector, prop->offset);
+		t = read_byte(prop->sector, prop->offset);
 		txt[0] = '$';
 		char h[3];
 		sprintf(h, "%02x", (int)t);
@@ -122,7 +131,7 @@ string filesystem::get_property(const property * prop)
 	} else if (prop->size > 2) {
 		size_t i;
 		for (i = 0; i < prop->size; i++) {
-			txt[i] = get_byte(prop->sector, prop->offset + i);
+			txt[i] = read_byte(prop->sector, prop->offset + i);
 		}
 		txt[i] = 0;
 	}
