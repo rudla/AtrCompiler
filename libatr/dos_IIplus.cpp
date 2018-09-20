@@ -13,7 +13,7 @@ const disk::sector_num VTOC_SECTOR = 360;
 
 std::string dos_IIplus::name()
 {
-	return "dosII+";
+	return "II+";
 }
 
 static const filesystem::property dos_props[2] = 

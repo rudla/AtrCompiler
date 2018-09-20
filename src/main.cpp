@@ -269,35 +269,39 @@ int main(int argc, char *argv[])
 	*/
 	string command;
 	int x = 1;
-	if (argc == 1) {
-		cout << help;
-	} else {
-		if (strcmp(argv[x], "list") == 0) {
-			x++;
-			auto d = disk::load(argv[x++]);
-			auto fs = detect_filesystem(d);
-			unpack(fs, "");
-		} else if (strcmp(argv[x], "pack") == 0) {
-			x++;
-			string atr = argv[x++];
-			string dir = "dir.txt";
-			if (x < argc) {
-				dir = argv[x++];
+	try {
+		if (argc == 1) {
+			cout << help;
+		} else {
+			if (strcmp(argv[x], "list") == 0) {
+				x++;
+				auto d = disk::load(argv[x++]);
+				auto fs = detect_filesystem(d);
+				unpack(fs, "");
+			} else if (strcmp(argv[x], "pack") == 0) {
+				x++;
+				string atr = argv[x++];
+				string dir = "dir.txt";
+				if (x < argc) {
+					dir = argv[x++];
+				}
+				auto d2 = pack(dir);
+				d2->save(atr);
+				delete d2;
+			} else if (strcmp(argv[x], "unpack") == 0) {
+				x++;
+				string atr = argv[x++];
+				string dir = "dir.txt";
+				if (x < argc) {
+					dir = argv[x++];
+				}
+				auto d = disk::load(atr);
+				auto fs = detect_filesystem(d);
+				unpack(fs, dir);
 			}
-			auto d2 = pack(dir);
-			d2->save(atr);
-			delete d2;
-		} else if (strcmp(argv[x], "unpack") == 0) {
-			x++;
-			string atr = argv[x++];
-			string dir = "dir.txt";
-			if (x < argc) {
-				dir = argv[x++];
-			}
-			auto d = disk::load(atr);
-			auto fs = detect_filesystem(d);
-			unpack(fs, dir);
 		}
+	} catch (const char * msg) {
+		cerr << "Error: " << msg << "\n";
 	}
 	return 0;
 }
