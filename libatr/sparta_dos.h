@@ -92,7 +92,7 @@ public:
 	};
 
 	filesystem::dir * root_dir() override;
-	filesystem::file * create_file(char * name) override;
+	//filesystem::file * create_file(char * name) override;
 	dir * open_dir(disk::sector_num sector);
 
 protected:

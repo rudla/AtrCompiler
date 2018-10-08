@@ -2,32 +2,33 @@
 
 #include "filesystem.h"
 
-class dos2 : public filesystem
+class dos25 : public filesystem
 {
 public:
 
-	dos2(disk * d);
-	~dos2();
+	dos25(disk * d);
+	~dos25();
+
+	//static disk::sector_num dir_start;
+	//static disk::sector_num dir_size;
+
+	std::string name() override;
+
+	const property * properties() override;
 
 	static filesystem * format(disk * d);
 	static bool detect(disk * d);
-
-	std::string name() override;
-	const property * properties() override;
-
 
 	disk::sector_num free_sector_count() override;
 
 	disk::sector_num get_dos_first_sector() override;
 	void set_dos_first_sector(disk::sector_num sector) override;
 
-	filesystem::dir * root_dir() override;
-
 	class dos2_file : public filesystem::file
 	{
 	public:
 
-		dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_pos, int file_no, disk::sector_num first_sec, disk::sector_num sec_cnt, bool writing);
+		dos2_file(dos25 & fs, disk::sector_num dir_sector, size_t dir_pos, int file_no, disk::sector_num first_sec, disk::sector_num sec_cnt, bool writing);
 		~dos2_file();
 
 		bool eof() override;
@@ -42,31 +43,32 @@ public:
 		disk::sector_num sector_next();
 		bool next_sector();
 
-		dos2 & fs;
-
-		disk::sector_num first_sec;
+		dos25 & fs;
 
 		// current position
 		disk::sector_num sector;
 		size_t pos;
-
-		//byte * buf;
+		byte * buf;
 
 		bool writing;
+
 
 		// dir
 		disk::sector_num dir_sector;
 		size_t           dir_pos;		// position in sector
 		int				 file_no;
 		
+		disk::sector_num first_sec;
 		size_t sec_cnt;					// size if not known yet
 		size_t size;					// size in bytes
+
+		bool   created_by_dos2;
 	};
 
 	class dos2_dir : public filesystem::dir
 	{
 	public:
-		dos2_dir(dos2 & fs, disk::sector_num sector);
+		dos2_dir(dos25 & fs, disk::sector_num sector);
 		void next() override;
 		bool at_end() override;
 		std::string name() override;
@@ -79,15 +81,17 @@ public:
 
 	protected:
 		int alloc_entry(char * name, byte flags, disk::sector_num first_sec, disk::sector_num * p_sector, size_t * p_offset);
-		dos2 & fs;
+		dos25 & fs;
 		disk::sector_num first_sector;
 		disk::sector_num end_sector;
 		disk::sector_num sector;
 		size_t           pos;		// position in sector
 		int				 file_no;
 
-		//byte * buf;
+		byte * buf;
 	};
+
+	filesystem::dir * root_dir() override;
 
 protected:
 
@@ -101,6 +105,7 @@ protected:
 		vtoc_buf[10 + sec / 8] ^= (128 >> (sec & 7));
 	}
 	
+	virtual void vtoc_init();
 	virtual disk::sector_num alloc_sector();
 	virtual void free_sector(disk::sector_num sector);
 
@@ -108,6 +113,9 @@ protected:
 	virtual void vtoc_read();
 	virtual void vtoc_write();
 
+	disk::sector_num vtoc_sec1;
+	disk::sector_num vtoc_sec2;
+	size_t vtoc_size;
 	byte * vtoc_buf;
 	bool vtoc_dirty;
 };

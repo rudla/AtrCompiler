@@ -41,6 +41,20 @@ enum atr_header
 	atr_header_size = 16			// size of the structure
 };
 
+disk::disk(size_t sector_size, sector_num sector_count) : s_size(sector_size), s_count(sector_count)
+{
+	data = new byte[byte_size()];
+	memset(data, 0, byte_size());
+	for (int i = 0; i < cache_size; i++) {
+		cache[i].init(*this);
+		cache[i].next = i + 1;
+		cache[i].prev = i - 1;
+	}
+	cache[0].prev = cache_size - 1;
+	cache[cache_size - 1].next = 0;
+	last = 0;
+}
+
 disk * disk::load(const std::string & filename)
 {
 	byte header[atr_header_size];
@@ -77,6 +91,7 @@ disk * disk::load(const std::string & filename)
 
 void disk::save(const std::string & filename)
 {
+
 	ofstream f(filename, ios::binary);
 	
 	byte header[atr_header_size];
@@ -89,6 +104,8 @@ void disk::save(const std::string & filename)
 	poke_word(header, atr_sector_size, s_size);
 
 	f.write((char *)header, atr_header_size);
+
+	flush();
 
 	for (size_t i = 1; i <= 3; i++) {
 		f.write((char *)sector_ptr(i), 128);
@@ -120,27 +137,112 @@ void disk::save_boot(const std::string & filename)
 	}
 }
 
-disk::sector::sector(disk & d, sector_num num) : d(d), num(num), dirty(false)
+void disk::sector::init(disk & d)
 {
+	num = 0;
+	dirty = false;
 	buf = new byte[d.sector_size()];
-	d.read_sector(num, buf);
 }
 
-void disk::sector::write()
+void disk::sector::set(size_t offset, size_t size, byte b)
 {
-	if (dirty) {
-		d.write_sector(num, buf);
-		dirty = false;
-	}
+	memset(buf + offset, b, size);
+	dirty = true;
 }
 
 disk::sector::~sector()
 {
-	write();
 	delete[] buf;
+}
+
+void disk::flush()
+{
+	for (auto & s : cache) {
+		if (s.dirty) {
+			write_sector(s.num, s.buf);
+			s.dirty = false;
+		}
+	}
+}
+
+disk::sector * disk::get_sector(sector_num num, bool init)
+{
+	if (cache[last].num == num) {
+		return &cache[last];
+	}
+
+	for (int i = 0; i < cache_size; i++) {
+		auto & s = cache[i];
+		if (s.num == num) {
+			cache[s.next].prev = s.prev;			
+			cache[s.prev].next = s.next;
+			if (i == last) last = cache[i].next;
+			//last = s.next;
+			s.next = last;
+			s.prev = cache[last].prev;
+			cache[last].prev = i;
+			cache[s.prev].next = i;
+
+			//print_cache();
+
+			return &s;
+		}
+	}
+
+	auto & s = cache[cache[last].next];
+	if (s.dirty) {
+		write_sector(s.num, s.buf);
+		s.dirty = false;
+	}
+
+	if (init) {
+		memset(s.buf, 0, sector_size());
+		s.dirty = true;
+	} else {
+		read_sector(num, s.buf);
+	}
+	s.num = num;
+	last = cache[last].next;
+	//print_cache();
+	return &s;
 }
 
 disk::sector * disk::get_sector(sector_num num)
 {
-	return new disk::sector(*this, num);
+	return get_sector(num, false);
+}
+
+disk::sector * disk::init_sector(sector_num num)
+{
+	return get_sector(num, true);
+}
+
+void disk::print_cache()
+{
+	for (auto cnt = 0, i=last; cnt < cache_size; cnt++) {
+		cout << cache[i].num << " ";
+		i = cache[i].next;
+	}
+	cout << "\n";
+}
+
+
+byte disk::read_byte(sector_num sector, size_t offset)
+{
+	auto s = get_sector(sector);
+	return s->peek(offset);
+}
+
+word disk::read_word(disk::sector_num sector, size_t offset)
+{
+	byte lo = read_byte(sector, offset);
+	byte hi = read_byte(sector, offset+1);
+	return size_t(hi) * 256 + lo;
+}
+
+word disk::read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset)
+{
+	byte lo = read_byte(sector, lo_offset);
+	byte hi = read_byte(sector, hi_offset);
+	return size_t(hi) * 256 + lo;
 }

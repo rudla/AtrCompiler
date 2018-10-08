@@ -1,8 +1,10 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <sstream>
 #include <memory>
+#include <cassert>
 #include "../libatr/libatr.h"
 
 #ifdef _WIN32
@@ -52,12 +54,14 @@ DOS filename atarifilename -- will install the file as DOS.SYS
 enum class file_format {
 	empty,
 	bin,
-	dos
+	dos,
+	dir
 };
 
 disk * pack(const string dir_filename)
 {
 
+	std::vector<filesystem::dir *> dir_stack;
 	ifstream index(dir_filename);
 
 	size_t sector_size = 128;
@@ -67,6 +71,7 @@ disk * pack(const string dir_filename)
 	disk * d = nullptr;
 	filesystem * fs = nullptr;
 	const filesystem::property * prop;
+	filesystem::dir * dir = nullptr;;
 
 	while (!index.eof()) {
 		string line;
@@ -79,7 +84,25 @@ disk * pack(const string dir_filename)
 
 		string filename;
 
+		int nesting = 0;
+
 		s >> filename;
+
+		while (filename == "|") {
+			nesting++;
+			s >> filename;
+		}
+
+		if (nesting > dir_stack.size()) {
+			throw "invalid dir nesting";
+		}
+
+		while (nesting < dir_stack.size()) {
+			delete dir;
+			dir = dir_stack.back();
+			dir_stack.pop_back();
+			change_dir("..");
+		}
 
 		file_format fformat = file_format::bin;
 
@@ -91,6 +114,7 @@ disk * pack(const string dir_filename)
 			s >> dos_type;
 			if (!d) d = new disk(sector_size, sector_count);
 			fs = install_filesystem(d, dos_type);
+			dir = fs->root_dir();
 			continue;
 
 		} else if (filename == "BOOT") {
@@ -104,6 +128,10 @@ disk * pack(const string dir_filename)
 			getline(s, value);
 			fs->set_property(prop, value);
 			continue;
+		} else if (filename == "/") {
+			fformat = file_format::dir;
+			s >> filename;
+			change_dir(filename.c_str());
 		}  else if (filename == "---") {
 			fformat = file_format::empty;
 		} else {
@@ -126,20 +154,33 @@ disk * pack(const string dir_filename)
 			filesystem::format_atari_name(fs, name, 8, 3);
 		}
 
-		auto file = fs->create_file(name);
-		if (fformat != file_format::empty) {
-			if (filename.size() == 0) {
-				throw "no filename";
+		if (fformat == file_format::dir) {
+			dir_stack.push_back(dir);
+			dir = dir->create_dir(name);
+		} else {
+			auto file = dir->create_file(name);
+			if (fformat != file_format::empty) {
+				if (filename.size() == 0) {
+					throw "no filename";
+				}
+				cout << filename << "\n";
+				file->import(filename);
+				if (fformat == file_format::dos) {
+					auto pos = file->first_sector();
+					fs->set_dos_first_sector(file->first_sector());
+				}
 			}
-			cout << filename << "\n";
-			file->import(filename);
-			if (fformat == file_format::dos) {
-				auto pos = file->first_sector();
-				fs->set_dos_first_sector(file->first_sector());
-			}
+			delete file;
 		}
-		delete file;
 	}
+
+	while (dir_stack.size()) {
+		delete dir;
+		dir = dir_stack.back();
+		dir_stack.pop_back();
+		change_dir("..");
+	}
+	delete dir;
 
 	delete fs;
 	return d;
@@ -161,7 +202,7 @@ void unpack_dir(filesystem::dir * dir, ofstream & atrdir, int nesting, disk::sec
 			}
 		}
 
-		cout << name << " ";
+		cout << std::setfill(' ') << std::setw(12) << std::left << name  << " ";
 
 		if (dir->is_dir()) {
 			cout << " /\n";
@@ -177,7 +218,7 @@ void unpack_dir(filesystem::dir * dir, ofstream & atrdir, int nesting, disk::sec
 				change_dir("..");
 			}
 		} else {
-			cout << dir->size() << "\n";
+			cout << std::right << std::setw(7) << dir->size() << "\n";
 
 			if (atrdir.is_open()) {
 				if (dir->size() == 0) {
@@ -222,15 +263,16 @@ void unpack(filesystem * fs, const string & dir_file)
 
 	cout << "DISK " << fs->sector_count() << " " << fs->sector_size() << "\n";
 	cout << "FORMAT " << fs->name() << "\n";
+	cout << "\n";
 
 	if (atrdir.is_open()) {
 		atrdir << "DISK " << fs->sector_count() << " " << fs->sector_size() << "\n";
 		atrdir << "FORMAT " << fs->name() << "\n";
-	}
 
-	string boot_filename = "boot.bin";
-	atrdir << "BOOT " << boot_filename << "\n";
-	fs->get_disk()->save_boot(boot_filename);
+		string boot_filename = "boot.bin";
+		atrdir << "BOOT " << boot_filename << "\n";
+		fs->get_disk()->save_boot(boot_filename);
+	}
 
 	for (auto prop = fs->properties(); prop->name; prop++) {
 		string value = fs->get_property(prop);
@@ -258,6 +300,34 @@ const string help =
 "AtrCompiler unpack atr_file [dir_file]\n"
 "\n";
 
+void disk_cache_test()
+{
+	disk::sector * s1;
+	auto d = new disk(128, 100);
+
+	for (int i = 1; i < 10; i++) {
+		s1 = d->init_sector(i);
+		s1->poke(0, i);
+	}
+	
+	s1 = d->get_sector(3);
+	assert(s1->peek(0) == 3);
+
+	s1 = d->get_sector(5);
+	assert(s1->peek(0) == 5);
+
+	s1 = d->get_sector(5);
+	assert(s1->peek(0) == 5);
+
+	s1 = d->get_sector(5);
+	assert(s1->peek(0) == 5);
+
+	s1 = d->get_sector(3);
+	assert(s1->peek(0) == 3);
+
+}
+
+
 int main(int argc, char *argv[])
 {
 	/*
@@ -267,6 +337,9 @@ int main(int argc, char *argv[])
 	list   .atr
 
 	*/
+
+	//disk_cache_test();
+
 	string command;
 	int x = 1;
 	try {

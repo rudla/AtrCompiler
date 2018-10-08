@@ -23,8 +23,11 @@ public:
 	const property * find_property(const std::string & name);
 	void set_property(const property * prop, const std::string & value);
 	void set_property(const property * prop, int value);
+
 	byte read_byte(disk::sector_num sector, size_t offset);
-	size_t read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset);
+	word read_word(disk::sector_num sector, size_t offset);
+	word read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset);
+
 	void write_word(disk::sector_num sector, size_t offset, size_t val);
 	void write_byte(disk::sector_num sector, size_t offset, byte val);
 
@@ -62,10 +65,12 @@ public:
 		virtual dir * open_dir();
 		virtual bool  is_dir();
 		virtual bool  is_deleted();
+		virtual file * create_file(char * name);
+		virtual dir * create_dir(char * name);
 	};
 
 	disk * get_disk();
-	virtual file * create_file(char * name) = 0;
+	//virtual file * create_file(char * name) = 0;
 	virtual dir * root_dir() = 0;
 
 	size_t sector_size() {
@@ -88,6 +93,11 @@ protected:
 	void read_sector(disk::sector_num num, byte * data)
 	{
 		d->read_sector(num, data);
+	}
+
+	disk::sector * get_sector(disk::sector_num num)
+	{
+		return d->get_sector(num);
 	}
 
 	disk * d;

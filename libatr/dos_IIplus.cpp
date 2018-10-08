@@ -11,6 +11,9 @@ const size_t VTOC_BITMAP = 10;
 const disk::sector_num VTOC2_SECTOR = 359;
 const disk::sector_num VTOC_SECTOR = 360;
 
+#define DIR_FIRST_SECTOR 361
+#define DIR_SIZE 8
+
 
 const size_t BOOT_FILE_LO = 0x03d;
 const size_t BOOT_FILE_HI = 0x03f;
@@ -59,7 +62,7 @@ bool dos_IIplus::detect(disk * d)
 	return a;
 }
 
-dos_IIplus::dos_IIplus(disk * d) : dos2(d)
+dos_IIplus::dos_IIplus(disk * d) : dos25(d)
 {
 }
 
@@ -123,7 +126,7 @@ void dos_IIplus::vtoc_format()
 		switch_sector_used(VTOC2_SECTOR);
 	}
 
-	for (auto sec = dir_start; sec < dir_start + dir_size; sec++) {
+	for (auto sec = DIR_FIRST_SECTOR; sec < DIR_FIRST_SECTOR + DIR_SIZE; sec++) {
 		switch_sector_used(sec);
 	}
 	vtoc_dirty = true;

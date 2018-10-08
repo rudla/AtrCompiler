@@ -64,31 +64,28 @@ void filesystem::set_property(const property * prop, const string & value)
 
 void filesystem::set_property(const property * prop, int value)
 {
-	auto buf = new byte[sector_size()];
-	read_sector(prop->sector, buf);
+	auto s = get_sector(prop->sector);
 	if (prop->size == 1) {
-		buf[prop->offset] = value;
+		s->poke(prop->offset, value);
+		s->buf[prop->offset] = value;
 	} else if (prop->size == 2) {
-		poke_word(buf, prop->offset, value);
+		poke_word(s->buf, prop->offset, value);
 	}
-	write_sector(prop->sector, buf);
-	delete[] buf;
 }
 
 byte filesystem::read_byte(disk::sector_num sector, size_t offset)
 {
-	auto buf = new byte[sector_size()];
-	read_sector(sector, buf);
-	byte b = buf[offset];
-	delete[] buf;
-	return b;
+	return d->read_byte(sector, offset);
 }
 
-size_t filesystem::read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset)
+word filesystem::read_word(disk::sector_num sector, size_t offset)
 {
-	byte lo = read_byte(sector, lo_offset);
-	byte hi = read_byte(sector, hi_offset);
-	return size_t(hi) * 256 + lo;
+	return d->read_word(sector, offset);
+}
+
+word filesystem::read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset)
+{
+	return d->read_word(sector, lo_offset, hi_offset);
 }
 
 void filesystem::write_byte(disk::sector_num sector, size_t offset, byte val)
@@ -205,4 +202,14 @@ bool  filesystem::dir::is_deleted()
 disk::sector_num filesystem::free_sector_count()
 {
 	return 0;
+}
+
+filesystem::file * filesystem::dir::create_file(char * name)
+{
+	throw "file creating not supported";
+}
+
+filesystem::dir * filesystem::dir::create_dir(char * name)
+{
+	throw "dirs not supported";
 }

@@ -116,6 +116,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\libatr\disk.cpp" />
+    <ClCompile Include="..\libatr\dos_2_5.cpp" />
     <ClCompile Include="..\libatr\dos2_filesystem.cpp" />
     <ClCompile Include="..\libatr\dos_IIplus.cpp" />
     <ClCompile Include="..\libatr\filesystem.cpp" />
@@ -126,6 +127,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libatr\disk.h" />
+    <ClInclude Include="..\libatr\dos_2_5.h" />
     <ClInclude Include="..\libatr\dos2_filesystem.h" />
     <ClInclude Include="..\libatr\dos_IIplus.h" />
     <ClInclude Include="..\libatr\filesystem.h" />

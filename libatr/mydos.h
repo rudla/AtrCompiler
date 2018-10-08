@@ -75,9 +75,9 @@ SECTOR ADDRESS OF DOS.SYS
 
 #pragma once
 
-#include "dos2_filesystem.h"
+#include "dos_2_5.h"
 
-class mydos : public dos2
+class mydos : public dos25
 {
 public:
 	mydos(disk * d);
@@ -92,12 +92,15 @@ public:
 	void set_dos_first_sector(disk::sector_num sector) override;
 
 	disk::sector_num free_sector_count() override;
+	disk::sector_num alloc_dir();
 
 	class mydos_dir : public dos2_dir {
 	public:
-		mydos_dir(dos2 & fs, disk::sector_num sector);
+		mydos_dir(mydos & fs, disk::sector_num sector);
 		bool is_dir() override;
 		dir * open_dir() override;
+		dir * create_dir(char * name) override;
+
 
 	};
 

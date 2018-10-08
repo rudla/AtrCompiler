@@ -49,10 +49,9 @@ const filesystem::property * sparta_dos::properties()
 
 sparta_dos::sparta_dos(disk * d) : filesystem(d)
 {
-	disk::sector * s = d->get_sector(1);
+	auto s = d->get_sector(1);
 	dir_sector = peek_word(s->buf, DIR_SECTOR);
 	free_count = peek_word(s->buf, FREE_SECTOR_COUNT);
-	delete s;
 }
 
 sparta_dos::~sparta_dos()
@@ -261,11 +260,6 @@ size_t sparta_dos::sparta_dos_file::size()
 void sparta_dos::sparta_dos_file::set_size(size_t size)
 {
 	byte_size = size;
-}
-
-filesystem::file * sparta_dos::create_file(char * name)
-{
-	return nullptr;
 }
 
 sparta_dos::sparta_dos_file::~sparta_dos_file()

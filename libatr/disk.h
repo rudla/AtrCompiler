@@ -6,6 +6,7 @@
 #include <string>
 
 typedef uint8_t byte;
+typedef uint16_t word;
 
 #define poke_word(buf, idx, n) buf[idx] = byte((n) & 255); buf[idx+1] = byte((n) >> 8);
 #define peek_word(buf, idx) (buf[idx] + buf[idx+1] * 256)
@@ -16,11 +17,7 @@ public:
 
 	typedef size_t sector_num;
 
-	disk(size_t sector_size, sector_num sector_count) : s_size(sector_size), s_count(sector_count)
-	{
-		data = new byte[byte_size()];
-		memset(data, 0, byte_size());
-	}
+	disk(size_t sector_size, sector_num sector_count);
 
 	sector_num sector_count() const {
 		return s_count;
@@ -38,6 +35,47 @@ public:
 		return (num <= 3) ? 128 : s_size;
 	}
 
+	static disk * load(const std::string & filename);
+	void save(const std::string & filename);
+
+	void install_boot(const std::string & filename);
+	void save_boot(const std::string & filename);
+
+
+	struct sector {
+		int next, prev;
+		sector_num num;
+		bool dirty;
+		byte * buf;
+
+		void init(disk & d);
+		~sector();
+
+		void poke(size_t offset, byte value)
+		{
+			buf[offset] = value;
+			dirty = true;
+		}
+
+		void dpoke(size_t offset, word value)
+		{
+			poke_word(buf, offset, value)
+			dirty = true;
+		}
+
+		inline byte peek(size_t offset) const { return buf[offset]; }
+		byte operator[](size_t offset) const { return buf[offset]; }
+
+		void set(size_t offset, size_t size, byte b);
+
+	};
+
+	sector * get_sector(sector_num num, bool init);
+	sector * get_sector(sector_num num);
+	sector * init_sector(sector_num num);
+
+	void flush();
+
 	void write_sector(sector_num num, byte * data)
 	{
 		memcpy(sector_ptr(num), data, sector_size(num));
@@ -48,28 +86,12 @@ public:
 		memcpy(data, sector_ptr(num), sector_size(num));
 	}
 
-	static disk * load(const std::string & filename);
-	void save(const std::string & filename);
-
-	void install_boot(const std::string & filename);
-	void save_boot(const std::string & filename);
-
-
-	struct sector {
-		disk & d;
-		sector_num num;
-		bool dirty;
-		byte * buf;
-
-		sector(disk & d, sector_num num);
-		~sector();
-		void write();
-
-	};
-
-	sector * get_sector(sector_num num);
+	byte read_byte(sector_num sector, size_t offset);
+	word read_word(sector_num sector, size_t offset);
+	word read_word(sector_num sector, size_t lo_offset, size_t hi_offset);
 
 private:
+
 	byte * sector_ptr(size_t num) {
 		return &data[(num <= 3) ? (num - 1) * 128 : 3 * 128 + (num - 4) * s_size];
 	}
@@ -78,4 +100,11 @@ private:
 	sector_num s_count;
 	byte * data;
 
+	enum {
+		cache_size = 4
+	};
+
+	sector cache[cache_size];
+	int last;
+	void print_cache();
 };

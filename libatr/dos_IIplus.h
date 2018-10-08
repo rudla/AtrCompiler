@@ -53,9 +53,9 @@ To specify the boot start, we must therefore set LO,HI to $073D, $073f. (Byte $3
 
 #pragma once
 
-#include "dos2_filesystem.h"
+#include "dos_2_5.h"
 
-class dos_IIplus : public dos2
+class dos_IIplus : public dos25
 {
 public:
 	dos_IIplus(disk * d);

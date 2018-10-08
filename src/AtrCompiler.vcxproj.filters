@@ -34,6 +34,9 @@
     <ClCompile Include="..\libatr\libatr.cpp">
       <Filter>libatr</Filter>
     </ClCompile>
+    <ClCompile Include="..\libatr\dos_2_5.cpp">
+      <Filter>libatr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libatr\disk.h">
@@ -55,6 +58,9 @@
       <Filter>libatr</Filter>
     </ClInclude>
     <ClInclude Include="..\libatr\libatr.h">
+      <Filter>libatr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libatr\dos_2_5.h">
       <Filter>libatr</Filter>
     </ClInclude>
   </ItemGroup>
