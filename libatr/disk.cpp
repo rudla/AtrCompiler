@@ -63,7 +63,7 @@ disk * disk::load(const std::string & filename)
 
 	f.read((char*)header, atr_header_size);
 
-	if (header[atr_magic] != 0x96 || header[atr_magic + 1] != 0x02) throw("This file is not an Atari dosk file.");	
+	if (header[atr_magic] != 0x96 || header[atr_magic + 1] != 0x02) throw("This file is not an Atari disk file.");	
 	size_t size = (peek_word(header, atr_disk_size_hi) << 16) + peek_word(header, atr_disk_size) * 16;
 	size_t sector_size = peek_word(header, atr_sector_size);
 	size_t boot_sector_size = (sector_size >= 256 && (size & 0xff) == 0) ? sector_size : 128;
@@ -112,18 +112,22 @@ void disk::save(const std::string & filename)
 	}
 
 	for (size_t i = 4; i <= s_count; i++) {
+		if (i == 84) {
+			char * s = (char *)sector_ptr(i);
+			cout << "";
+		}
 		f.write((char *)sector_ptr(i), s_size);
 	}
-
+	f.close();
 }
 
 void disk::install_boot(const std::string & filename)
 {
-	byte buf[128];
 	ifstream f(filename, ios::binary);
-	for (sector_num s = 1; s <= 3; s++) {
-		f.read((char *)buf, 128);
-		write_sector(s, buf);
+	for (sector_num num = 1; num <= 3; num++) {
+		auto s = get_sector(num);		
+		f.read((char *)s->buf, 128);
+		s->dirty = true;
 	}
 }
 
@@ -137,11 +141,22 @@ void disk::save_boot(const std::string & filename)
 	}
 }
 
+disk::sector::sector()
+{
+	dirty = false;
+	buf = nullptr;
+}
+
 void disk::sector::init(disk & d)
 {
 	num = 0;
 	dirty = false;
 	buf = new byte[d.sector_size()];
+}
+
+word disk::sector::dpeek(size_t offset) const
+{
+	return buf[offset] + buf[offset + 1] * 256;
 }
 
 void disk::sector::set(size_t offset, size_t size, byte b)
@@ -150,25 +165,48 @@ void disk::sector::set(size_t offset, size_t size, byte b)
 	dirty = true;
 }
 
+void disk::sector::copy(size_t offset, const char * ptr, size_t size)
+{
+	memcpy(buf + offset, ptr, size);
+	dirty = true;
+}
+
 disk::sector::~sector()
 {
 	delete[] buf;
 }
 
+void disk::write_sector(sector_num num, byte * data)
+{
+//	cout << "writing " << num << "\n";
+//	if (num == 84) {
+//		cout << "Here!\n";
+//	}
+	auto adr = sector_ptr(num);
+	memcpy(sector_ptr(num), data, sector_size(num));
+}
+
+void disk::flush(sector & s)
+{
+	if (s.dirty) {
+		write_sector(s.num, s.buf);
+		s.dirty = false;
+	}
+}
+
 void disk::flush()
 {
 	for (auto & s : cache) {
-		if (s.dirty) {
-			write_sector(s.num, s.buf);
-			s.dirty = false;
-		}
+		flush(s);
 	}
 }
 
 disk::sector * disk::get_sector(sector_num num, bool init)
 {
-	if (cache[last].num == num) {
-		return &cache[last];
+	auto & recent = cache[last];
+
+	if (recent.num == num) {
+		return &recent;
 	}
 
 	for (int i = 0; i < cache_size; i++) {
@@ -190,10 +228,7 @@ disk::sector * disk::get_sector(sector_num num, bool init)
 	}
 
 	auto & s = cache[cache[last].next];
-	if (s.dirty) {
-		write_sector(s.num, s.buf);
-		s.dirty = false;
-	}
+	flush(s);
 
 	if (init) {
 		memset(s.buf, 0, sector_size());
@@ -245,4 +280,23 @@ word disk::read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset
 	byte lo = read_byte(sector, lo_offset);
 	byte hi = read_byte(sector, hi_offset);
 	return size_t(hi) * 256 + lo;
+}
+
+void disk::write_byte(sector_num sector, size_t offset, byte val)
+{
+	auto s = get_sector(sector);
+	s->poke(offset, val);
+}
+
+void disk::write_word(sector_num sector, size_t offset, word val)
+{
+	auto s = get_sector(sector);
+	s->dpoke(offset, val);
+}
+
+void disk::write_word(sector_num sector, size_t lo_offset, size_t hi_offset, word val)
+{
+	auto s = get_sector(sector);
+	s->poke(lo_offset, val & 0xff);
+	s->poke(hi_offset, (val >> 8) & 0xff);
 }

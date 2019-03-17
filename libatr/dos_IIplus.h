@@ -3,19 +3,29 @@ DOS II+
 
 
 Format of DOS II+ filesystem is simmilar to DOS 2.0.
-For single density, the format is compatible.
 For bigger densities, VTOC is handled differently.
+
+## Single density
+
+For single density, the format is compatible.
+VTOC version is 02.
+Standard number of $2c3 (707) sectors sre used.
 
 ## VTOC
 
 VTOC is in sectors 359, 360
 
-360    0     disk version (=3)
-1..2  disk capacity (1009 for medium density)
-3..4  number of free sectors (1009 at the start)
-5..10 unused
+sector 360    
 
-359    0..9  additional 10 bytes of VTOC
+0        disk version 3 - medium density, 2 - signle density (do it is compatible with dos 2)
+1..2     disk capacity = $31f (1009)
+3..4     number of free sectors (1009 at the start)
+5..10    unused
+11..127  
+
+sector 359    
+
+0..9  additional 10 bytes of VTOC
 
 ## Boot sector
 
@@ -53,9 +63,9 @@ To specify the boot start, we must therefore set LO,HI to $073D, $073f. (Byte $3
 
 #pragma once
 
-#include "dos_2_5.h"
+#include "expanded_vtoc.h"
 
-class dos_IIplus : public dos25
+class dos_IIplus : public expanded_vtoc
 {
 public:
 	dos_IIplus(disk * d);
@@ -68,16 +78,5 @@ public:
 
 	disk::sector_num get_dos_first_sector() override;
 	void set_dos_first_sector(disk::sector_num sector) override;
-
-	disk::sector_num free_sector_count() override;
-
-	void vtoc_init();
-	void vtoc_format();
-	void vtoc_read();
-	void vtoc_write();
-
-	disk::sector_num alloc_sector();
-
-	bool enhanced_vtoc();
 };
 

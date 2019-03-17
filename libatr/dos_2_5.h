@@ -1,3 +1,37 @@
+/*
+DOS 2.5
+
+
+## Single density
+
+Sigle density is identical to DOS 2.
+
+## VTOC in medium density
+
+Sector 360 of VTOC is compatible to that of single density.
+Has version 2 (even if this is enhanced density).
+Disk capacity is specified as $403 (1010),
+Free sectors are specified as $2c3 (707) - this is number 
+of sectors available for single density operations.
+
+Thanks to this design, DOS 2 can reliably write to single density part of the medium
+density disk formatted by DOS 2.5.
+
+
+### VTOC2
+
+Second sector used for VTOC is number 1024.
+
+Initial free sectors written there is .
+
+  0.. 83: Repeat VTOC bitmap for sectors 48..719
+ 84..112: Bitmap for sectors 720..951
+112..121: Bitmap for sectors 952..1023
+122..123: Current number of free sectors above sector 719. Initially $12f (303).
+124..127: Unused.
+
+*/
+
 #pragma once
 
 #include "filesystem.h"

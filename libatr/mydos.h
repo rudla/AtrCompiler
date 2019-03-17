@@ -3,8 +3,13 @@ MyDOS
 
 
 Format of MyDOS filesystem is simmilar to DOS 2.0.
-For single density, the format is compatible.
 For bigger densities, VTOC is handled differently.
+
+## Single density
+
+For single density, the format is compatible. 
+MyDos however uses $2c4 (708) sectors.
+
 
 ## Subdirectories
 
@@ -36,6 +41,9 @@ only  be  accessed  if it falls in the first 1023 sectors of the disk
 and  then only if the file number checking code in DOS 2 is disabled.
 This  format  allows MYDOS to support accessing disks of up to 65,535
 sectors of 256 bytes each (approximately 16 Mbytes).
+
+For medium density version in VTOC is 3, number of sectors is $403 (=1027).
+
 
 ## Boot sector
 
@@ -72,14 +80,14 @@ SECTOR ADDRESS OF DOS.SYS
 
 */
 
-
 #pragma once
 
-#include "dos_2_5.h"
+#include "expanded_vtoc.h"
 
-class mydos : public dos25
+class mydos : public expanded_vtoc
 {
 public:
+
 	mydos(disk * d);
 
 	std::string name();
@@ -91,20 +99,17 @@ public:
 	disk::sector_num get_dos_first_sector() override;
 	void set_dos_first_sector(disk::sector_num sector) override;
 
-	disk::sector_num free_sector_count() override;
-	disk::sector_num alloc_dir();
-
 	class mydos_dir : public dos2_dir {
 	public:
 		mydos_dir(mydos & fs, disk::sector_num sector);
 		bool is_dir() override;
 		dir * open_dir() override;
 		dir * create_dir(char * name) override;
-
-
 	};
 
 	filesystem::dir * root_dir() override;
 
+private:
+	disk::sector_num alloc_dir();
 };
 

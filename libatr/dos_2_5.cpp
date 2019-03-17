@@ -485,5 +485,5 @@ disk::sector_num dos25::get_dos_first_sector()
 
 void dos25::set_dos_first_sector(disk::sector_num sector) 
 {
-	return write_word(1, BOOT_FILE_LO, sector);
+	return write_word(1, BOOT_FILE_LO, word(sector));
 }

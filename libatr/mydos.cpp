@@ -1,26 +1,12 @@
 #include "mydos.h"
 
-#define DIR_FIRST_SECTOR 361
-
 #define FLAG_DIRECTORY 0x10   // MyDOS
 #define FLAG_IN_USE 0x40
 #define FLAG_LOCKED 0x20
 
-/*
-const size_t VTOC_BUF_SIZE = 256;
-
-const size_t VTOC_DOS_VERSION = 0;
-const size_t VTOC_CAPACITY = 1;
-*/
 const size_t VTOC_FREE_SEC = 3;
-
 const size_t VTOC_BITMAP = 10;
 
-/*
-
-const disk::sector_num VTOC2_SECTOR = 359;
-const disk::sector_num VTOC_SECTOR = 360;
-*/
 
 std::string mydos::name()
 {
@@ -32,18 +18,12 @@ const size_t BOOT_FILE_HI = 0x10;
 
 void mydos::set_dos_first_sector(disk::sector_num sector)
 {
-	return write_word(1, BOOT_FILE_LO, sector);
-//	set_property(&dos_props[0], sector & 0xff);
-//	set_property(&dos_props[0], (sector >> 8) & 0xff);
+	return write_word(1, BOOT_FILE_LO, word(sector));
 }
 
 disk::sector_num mydos::get_dos_first_sector()
 {
 	return read_word(1, BOOT_FILE_LO, BOOT_FILE_HI);
-
-//	auto lo = get_property_byte(&dos_props[0]);
-//	auto hi = get_property_byte(&dos_props[1]);
-//	return ((int)hi * 256) + lo;
 }
 
 const filesystem::property * mydos::properties()
@@ -66,15 +46,14 @@ bool mydos::detect(disk * d)
 	return a;
 }
 
-mydos::mydos(disk * d) : dos25(d)
+mydos::mydos(disk * d) : expanded_vtoc(d)
 {
 }
 
 filesystem * mydos::format(disk * d)
 {
 	mydos * fs = new mydos(d);
-	fs->vtoc_format();
-	fs->dir_format();
+	fs->vtoc_format(0xffff);
 	return fs;
 }
 
@@ -90,39 +69,30 @@ mydos::mydos_dir::mydos_dir(mydos & fs, disk::sector_num sector) : dos2_dir(fs, 
 
 bool mydos::mydos_dir::is_dir()
 {
-	return (buf[pos] & FLAG_DIRECTORY) != 0;
+	return (fs.read_byte(sector, pos) & FLAG_DIRECTORY) != 0;
 }
 
 filesystem::dir * mydos::mydos_dir::open_dir()
 {
-	return new mydos_dir(static_cast<mydos&>(fs), peek_word(buf, pos + 3));
-}
-
-disk::sector_num mydos::free_sector_count()
-{
-	return peek_word(vtoc_buf, VTOC_FREE_SEC);;
+	return new mydos_dir(static_cast<mydos&>(fs), fs.read_word(sector, pos + 3));
 }
 
 disk::sector_num mydos::alloc_dir()
 {
 	// find 8 consecutive free sectors
+
 	int vtoc_size = 128;
-	disk::sector_num sec = 0, start = 0;
+	disk::sector_num sec = 0, start = 0, vtoc_secno = VTOC_SECTOR;
 	byte size = 0;
+	auto vtoc = get_sector(vtoc_secno);
+
 	for (size_t i = 0; i < vtoc_size; i++) {
-		auto b = vtoc_buf[VTOC_BITMAP + i];
+		auto b = vtoc->buf[VTOC_BITMAP + i];
 		for (byte m = 128; m != 0; m /= 2) {
 			if (b & m) {
 				if (size == 0) start = sec;
 				size++;
 				if (size == 8) {
-					for (int i = 0; i < size; i++) {
-						switch_sector_used(start + i);
-					}
-					int free = peek_word(vtoc_buf, VTOC_FREE_SEC);
-					free -= size;
-					poke_word(vtoc_buf, VTOC_FREE_SEC, free);
-					vtoc_dirty = true;
 					return start;
 				}
 			} else {
@@ -137,7 +107,6 @@ disk::sector_num mydos::alloc_dir()
 
 filesystem::dir * mydos::mydos_dir::create_dir(char * name)
 {
-	//auto & mfs = static_cast<mydos&>(fs);
 	disk::sector_num sector;
 	size_t offset;
 	auto first_sector = static_cast<mydos&>(fs).alloc_dir();

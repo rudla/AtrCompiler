@@ -49,6 +49,7 @@ public:
 		byte * buf;
 
 		void init(disk & d);
+		sector();
 		~sector();
 
 		void poke(size_t offset, byte value)
@@ -63,7 +64,10 @@ public:
 			dirty = true;
 		}
 
+		void copy(size_t offset, const char * ptr, size_t size);
+
 		inline byte peek(size_t offset) const { return buf[offset]; }
+		word dpeek(size_t offset) const;
 		byte operator[](size_t offset) const { return buf[offset]; }
 
 		void set(size_t offset, size_t size, byte b);
@@ -75,12 +79,9 @@ public:
 	sector * init_sector(sector_num num);
 
 	void flush();
+	void flush(sector & s);
 
-	void write_sector(sector_num num, byte * data)
-	{
-		memcpy(sector_ptr(num), data, sector_size(num));
-	}
-
+	void write_sector(sector_num num, byte * data);
 	void read_sector(sector_num num, byte * data)
 	{
 		memcpy(data, sector_ptr(num), sector_size(num));
@@ -89,6 +90,10 @@ public:
 	byte read_byte(sector_num sector, size_t offset);
 	word read_word(sector_num sector, size_t offset);
 	word read_word(sector_num sector, size_t lo_offset, size_t hi_offset);
+
+	void write_byte(sector_num sector, size_t offset, byte val);
+	void write_word(sector_num sector, size_t offset, word val);
+	void write_word(sector_num sector, size_t lo_offset, size_t hi_offset, word val);
 
 private:
 

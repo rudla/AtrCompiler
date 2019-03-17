@@ -119,10 +119,13 @@
     <ClCompile Include="..\libatr\dos_2_5.cpp" />
     <ClCompile Include="..\libatr\dos2_filesystem.cpp" />
     <ClCompile Include="..\libatr\dos_IIplus.cpp" />
+    <ClCompile Include="..\libatr\expanded_vtoc.cpp" />
     <ClCompile Include="..\libatr\filesystem.cpp" />
     <ClCompile Include="..\libatr\libatr.cpp" />
     <ClCompile Include="..\libatr\mydos.cpp" />
+    <ClCompile Include="..\libatr\rkdos.cpp" />
     <ClCompile Include="..\libatr\sparta_dos.cpp" />
+    <ClCompile Include="..\libatr\xdos.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -130,10 +133,13 @@
     <ClInclude Include="..\libatr\dos_2_5.h" />
     <ClInclude Include="..\libatr\dos2_filesystem.h" />
     <ClInclude Include="..\libatr\dos_IIplus.h" />
+    <ClInclude Include="..\libatr\expanded_vtoc.h" />
     <ClInclude Include="..\libatr\filesystem.h" />
     <ClInclude Include="..\libatr\libatr.h" />
     <ClInclude Include="..\libatr\mydos.h" />
+    <ClInclude Include="..\libatr\rkdos.h" />
     <ClInclude Include="..\libatr\sparta_dos.h" />
+    <ClInclude Include="..\libatr\xdos.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

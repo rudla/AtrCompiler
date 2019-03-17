@@ -40,7 +40,9 @@ Possible values are:
  * 2.0
  * 2.5
  * II+
+ * mydos
  * sparta
+ * xdos
 
 ### Filesystem parameters
 
@@ -77,6 +79,10 @@ If necessary, we can specify filename, as it should appear on atari. We can \ as
 \\   backslash
 ```
 
+## MyDos
+
+MyDos subdirectories are supported.
+
 ## DOS II+
 
 ```
@@ -96,6 +102,28 @@ x ->
  * If it's 1, RAMdisk will be formated after DOS will load. 
  * If it's a 0 RAMdisk will not be formated 
  * and if it's 8, the RAMdisk will be write protected
+
+## XDOS
+
+XDOS is successor of DOS II+. It has simmilar disk structure.
+
+```
+BUFFERS num
+```
+Number of 128 bytes buffers (and open files).
+MemLo depends on it!
+
+```
+RAMDISK $yx
+```
+
+Same as RAMDISK in DOS II+.
+
+```
+COLOR num
+```
+
+Background color used in DUP. If this value is 0, default color is used.
 
 ## Sparta Dos
 

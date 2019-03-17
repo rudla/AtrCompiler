@@ -9,7 +9,7 @@ disk * filesystem::get_disk()
 	return d;
 }
 
-void filesystem::file::write(const byte * data, size_t size)
+void filesystem::file::write_bytes(const byte * data, size_t size)
 {
 	while (size--) write(*data++);
 }
@@ -33,8 +33,13 @@ void filesystem::file::import(const string & filename)
 	ifstream o(filename, ios::binary);
 	if (!o.is_open()) throw "file does not exist";
 	byte c;
+	size_t len = 0;
 	while (o.read((char *)&c, 1)) {
+		if (len == 640) {
+			len = 640;
+		}
 		write(c);
+		len++;
 	}
 }
 
@@ -90,20 +95,12 @@ word filesystem::read_word(disk::sector_num sector, size_t lo_offset, size_t hi_
 
 void filesystem::write_byte(disk::sector_num sector, size_t offset, byte val)
 {
-	auto buf = new byte[sector_size()];
-	read_sector(sector, buf);
-	buf[offset] = val;
-	write_sector(sector, buf);
-	delete[] buf;
+	d->write_byte(sector, offset, val);
 }
 
-void filesystem::write_word(disk::sector_num sector, size_t offset, size_t val)
+void filesystem::write_word(disk::sector_num sector, size_t offset, word val)
 {
-	auto buf = new byte[sector_size()];
-	read_sector(sector, buf);
-	poke_word(buf, offset, val);
-	write_sector(sector, buf);
-	delete[] buf;
+	d->write_word(sector, offset, val);
 }
 
 byte filesystem::get_property_byte(const property * prop)
@@ -187,6 +184,11 @@ Atari filename format
 filesystem::dir * filesystem::dir::open_dir()
 {
 	throw "not_a_dir";
+}
+
+filesystem::dir::~dir()
+{
+
 }
 
 bool  filesystem::dir::is_dir()

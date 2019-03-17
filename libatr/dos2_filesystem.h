@@ -1,10 +1,41 @@
+/*
+Volume table of contents(VTOC)
+
+Sector 360 is the VTOC. It has this structure:
+
+Byte 0 : Directory type(always 0)
+Byte 1 - 2 : Maximum sector number (always 02C5, which is incorrect given that this equals 709 and the actual maximum sector number used by the FMS is 719. 
+             Due to this error, this value is ignored.)
+Byte 3 - 4 : Number of sectors available (starts at 709 and changes as sectors are allocated or deallocated)
+Byte 10 - 99 : Bitmap showing allocation of sectors.The high - order bit of byte 10 corresponds to(the nonexistent) sector 0 (so it is unused), 
+               the next - lower bit corresponds to sector 1, and so on through sector 7 for the low - order bit of byte 10, 
+			   then sector 8 for the high - order bit of byte 11, and so on.These are set to 1 if the sector is available, and 0 if it is in use.
+*/
+
 #pragma once
 
 #include "filesystem.h"
 
+
 class dos2 : public filesystem
 {
 public:
+
+
+	// ==== VTOC
+
+	static disk::sector_num VTOC_SECTOR;
+
+	enum {
+		VTOC_VERSION = 0,		// = 0 id DOS 2.0
+		VTOC_CAPACITY = 1,		// = 0x2C3
+		VTOC_FREE_SEC = 3,
+		VTOC_BITMAP = 10,
+		VTOC_BITMAP_SIZE = 90  // number of bytes
+	};
+
+	static disk::sector_num DIR_FIRST_SECTOR;
+	static size_t           DIR_SIZE;
 
 	dos2(disk * d);
 	~dos2();
@@ -37,7 +68,7 @@ public:
 
 	protected:
 
-		void write_sec(disk::sector_num next);
+		void write_data_sector(disk::sector_num next);
 		bool sector_end();
 		disk::sector_num sector_next();
 		bool next_sector();
@@ -49,8 +80,6 @@ public:
 		// current position
 		disk::sector_num sector;
 		size_t pos;
-
-		//byte * buf;
 
 		bool writing;
 
@@ -78,36 +107,28 @@ public:
 		void format();
 
 	protected:
-		int alloc_entry(char * name, byte flags, disk::sector_num first_sec, disk::sector_num * p_sector, size_t * p_offset);
+		int alloc_entry(const char * name, byte flags, disk::sector_num first_sec, disk::sector_num * p_sector, size_t * p_offset);
 		dos2 & fs;
 		disk::sector_num first_sector;
 		disk::sector_num end_sector;
-		disk::sector_num sector;
-		size_t           pos;		// position in sector
+		disk::sector_num sector;	// current sector
+		size_t           pos;		// position in current sector
 		int				 file_no;
-
-		//byte * buf;
 	};
 
 protected:
 
 	// DIR
 	void dir_format();
-	//byte * dir_buf;
 
 	// VTOC
-	
-	inline void switch_sector_used(disk::sector_num sec) {
-		vtoc_buf[10 + sec / 8] ^= (128 >> (sec & 7));
-	}
-	
+
+	bool find_free_sector(disk::sector_num vtoc_sec, size_t offset, size_t byte_count, disk::sector_num * p_sec);
+
+	virtual void switch_sector_use(disk::sector_num sec, byte count = 1);
+
 	virtual disk::sector_num alloc_sector();
 	virtual void free_sector(disk::sector_num sector);
 
-	virtual void vtoc_format();
-	virtual void vtoc_read();
-	virtual void vtoc_write();
-
-	byte * vtoc_buf;
-	bool vtoc_dirty;
+	virtual void vtoc_format(byte version);
 };

@@ -1,25 +1,11 @@
 #include "dos2_filesystem.h"
 
-/*
-Volume table of contents(VTOC)
-
-Sector 360 is the VTOC. It has this structure:
-
-Byte 0 : Directory type(always 0)
-Byte 1 - 2 : Maximum sector number (always 02C5, which is incorrect given that this equals 709 and the actual maximum sector number used by the FMS is 719. 
-             Due to this error, this value is ignored.)
-Byte 3 - 4 : Number of sectors available (starts at 709 and changes as sectors are allocated or deallocated)
-Byte 10 - 99 : Bitmap showing allocation of sectors.The high - order bit of byte 10 corresponds to(the nonexistent) sector 0 (so it is unused), 
-               the next - lower bit corresponds to sector 1, and so on through sector 7 for the low - order bit of byte 10, 
-			   then sector 8 for the high - order bit of byte 11, and so on.These are set to 1 if the sector is available, and 0 if it is in use.
-*/
-
 using namespace std;
 
 //===== DIR
 
-const disk::sector_num DIR_FIRST_SECTOR = 361;
-const size_t           DIR_SIZE = 8;
+disk::sector_num dos2::DIR_FIRST_SECTOR = 361;
+size_t           dos2::DIR_SIZE = 8;
 
 enum DirFlags {
 	FLAG_NEVER_USED = 0x00,
@@ -32,22 +18,12 @@ enum DirFlags {
 
 const size_t DIR_FILE_SIZE = 1;
 const size_t DIR_FILE_START = 3;
+const size_t DIR_FILE_NAME = 5;
 
-
-const size_t VTOC_BUF_SIZE = 128;
 
 // ==== VTOC
 
-const disk::sector_num VTOC_SECTOR = 0x168;
-
-const size_t VTOC_VERSION = 0;		// = 0 id DOS 2.0
-//const size_t VTOC_NUMBER_SECTORS_TOTAL = 0x2C3
-const size_t VTOC_MAX_FREE_SEC = 1;	// = 0x2C3
-const size_t VTOC_FREE_SEC     = 3;
-const size_t VTOC_BITMAP       = 10;
-const size_t VTOC_BITMAP_SIZE  = 90;  // number of bytes
-
-//const size_t VTOC2_FREE_SEC = VTOC2_OFFSET + 122;
+disk::sector_num dos2::VTOC_SECTOR = 0x168;
 
 //==== BOOT
 const size_t BOOT_FILE_LO = 0x0f;
@@ -72,10 +48,8 @@ filesystem * dos2::format(disk * d)
 {
 
 	dos2 * fs = new dos2(d);
-
+	fs->vtoc_format(2);
 	fs->dir_format();
-	fs->vtoc_format();
-	fs->vtoc_write();
 	return fs;
 }
 
@@ -93,15 +67,10 @@ const filesystem::property * dos2::properties()
 
 dos2::dos2(disk * d) : filesystem(d)
 {
-	vtoc_buf = new byte[VTOC_BUF_SIZE];  // we need only 128 for single density disk
-	vtoc_read();
 }
 
 dos2::~dos2()
 {
-	vtoc_write();
-//	delete[] dir_buf;
-	delete[] vtoc_buf;
 }
 
 void dos2::dir_format()
@@ -115,6 +84,7 @@ void dos2::dos2_dir::format()
 {
 	for (auto sec = first_sector; sec < end_sector; sec++) {
 		auto s = fs.get_disk()->init_sector(sec);
+		fs.switch_sector_use(sec);
 	}
 }
 
@@ -206,7 +176,7 @@ size_t dos2::dos2_dir::size()
 	while (sec) {
 		auto s = fs.get_sector(sec);
 		size += s->peek(sec_size - 1);
-		sec = s->peek(sec_size - 2) + (s->peek(sec_size - 3) & 3 << 8);
+		sec = s->peek(sec_size - 2) + ((s->peek(sec_size - 3) & 3) << 8);
 	}
 	return size;
 }
@@ -232,27 +202,19 @@ dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_po
 	}
 }
 
-int dos2::dos2_dir::alloc_entry(char * name, byte flags, disk::sector_num first_sec, disk::sector_num * p_sector, size_t * p_offset)
+int dos2::dos2_dir::alloc_entry(const char * name, byte flags, disk::sector_num first_sec, disk::sector_num * p_sector, size_t * p_offset)
 {
 	int file_no = 0;
-	auto dir_buf = new byte[fs.sector_size()];
 	
 	for (auto sec = first_sector; sec < end_sector; sec++) {
-		fs.read_sector(sec, dir_buf);
+		auto s = fs.get_sector(sec);
 		for (size_t i = 0; i < fs.sector_size(); i += 16) {
-			if (dir_buf[i] == 0 || (dir_buf[i] & FLAG_DELETED)) {
-
-				// write name, size, etc.
-
-				dir_buf[i] = flags;
-				dir_buf[i + 1] = 0;
-				dir_buf[i + 2] = 0;
-				poke_word(dir_buf, i + 3, first_sec);
-				//dir_buf[i + 3] = 0;
-				//dir_buf[i + 4] = 0;
-				memcpy(dir_buf + i + 5, name, 11);
-				fs.write_sector(sec, dir_buf);
-				delete[] dir_buf;
+			auto f = s->peek(i);
+			if (f == 0 || (f & FLAG_DELETED)) {
+				s->poke(i, flags);
+				s->dpoke(i + DIR_FILE_SIZE, 0);
+				s->dpoke(i + DIR_FILE_START, word(first_sec));
+				s->copy(i + DIR_FILE_NAME, name, 11);
 				*p_sector = sec;
 				*p_offset = i;
 				return file_no;
@@ -260,7 +222,6 @@ int dos2::dos2_dir::alloc_entry(char * name, byte flags, disk::sector_num first_
 			file_no++;
 		}
 	}
-	delete[] dir_buf;
 	throw "dir full";
 }
 
@@ -281,36 +242,23 @@ dos2::dos2_file::~dos2_file()
 				first_sec = sec;
 				sector = sec;
 			}
-			write_sec(0);
+			write_data_sector(0);
 		}
 
 		auto dir = fs.get_sector(dir_sector);
 		dir->poke(dir_pos, FLAG_IN_USE + FLAG_DOS2);
 		dir->dpoke(dir_pos + DIR_FILE_SIZE, word(sec_cnt));
 		dir->dpoke(dir_pos + DIR_FILE_START, word(first_sec));
-
-		//fs.read_sector(dir_sector, buf);
-		//buf[dir_pos] = FLAG_IN_USE;
-		//buf[dir_pos] |= FLAG_DOS2;
-
-		//poke_word(buf, dir_pos + 1, sec_cnt);
-		//poke_word(buf, dir_pos + 3, first_sec);
-		//fs.write_sector(dir_sector, buf);
 	}
 }
 
-void dos2::dos2_file::write_sec(disk::sector_num next) 
+void dos2::dos2_file::write_data_sector(disk::sector_num next) 
 {
 	auto p = fs.sector_size();
 	auto sec = fs.get_sector(sector);
 	sec->poke(--p, byte(pos));
 	sec->poke(--p, next & 0xff);
 	sec->poke(--p, byte((file_no << 2) + (next >> 8)));
-
-	//buf[--p] = byte(pos);
-	//buf[--p] = next & 0xff;
-	//buf[--p] = byte((file_no << 2) + (next >> 8));
-	//fs.write_sector(sector, buf);
 	
 	sector = next;
 	sec_cnt++;
@@ -325,7 +273,7 @@ bool dos2::dos2_file::sector_end()
 disk::sector_num dos2::dos2_file::sector_next()
 {
 	auto p = fs.sector_size();
-	return fs.read_byte(sector, p - 2) + (fs.read_byte(sector, p - 3) & 3 << 8);
+	return fs.read_byte(sector, p - 2) + ((fs.read_byte(sector, p - 3) & 3) << 8);
 }
 
 disk::sector_num dos2::dos2_file::first_sector()
@@ -362,14 +310,13 @@ byte dos2::dos2_file::read()
 
 void dos2::dos2_file::write(byte b) 
 {
+	if (first_sec == 0) {
+		first_sec = fs.alloc_sector();
+		sector = first_sec;
+	}
 	if (pos == fs.sector_size() - 3) {
 		auto sec = fs.alloc_sector();
-		if (first_sec == 0) {
-			first_sec = sec;
-			sector = sec;
-			sec = fs.alloc_sector();
-		}
-		write_sec(sec);
+		write_data_sector(sec);
 	}
 
 	fs.write_byte(sector, pos, b);
@@ -399,40 +346,66 @@ VTOC1                                     VTOC2
 
 */
 
-const size_t boot_size = 3;
-
-void dos2::vtoc_format()
+void dos2::vtoc_format(byte version)
 {
 	// Init VTOC
+	// 1. first 3 sectors are used for boot
+	// 2. 8 sectors are used for dir
+	// 3. vtoc sector is used
+	// 4. 720 sector is unused
 
-	auto capacity = 707;
-	memset(vtoc_buf, 0, VTOC_BUF_SIZE);
 
-	vtoc_buf[0] = 0;  // DOS_2.0	
-	poke_word(vtoc_buf, VTOC_MAX_FREE_SEC, capacity);
-	poke_word(vtoc_buf, VTOC_FREE_SEC, 707);
+	auto vtoc = d->init_sector(VTOC_SECTOR);
 
-	for (size_t i = 0; i < VTOC_BITMAP_SIZE; i++) vtoc_buf[VTOC_BITMAP + i] = 0xff;
-	vtoc_buf[VTOC_BITMAP] = 0x0f;		// first 4 sectors are always preallocated
-	switch_sector_used(VTOC_SECTOR);
-	for (auto sec = DIR_FIRST_SECTOR; sec < DIR_FIRST_SECTOR+DIR_SIZE; sec++) {
-		switch_sector_used(sec);
-	}
-	vtoc_dirty = true;
+	vtoc->poke(VTOC_VERSION, version);							// DOS_2.0	
+	vtoc->dpoke(VTOC_CAPACITY, 707);
+	vtoc->dpoke(VTOC_FREE_SEC, 707+8+1);					// 719 - (3(boot) + 1(vtoc) + 8(dir))
+	vtoc->set(VTOC_BITMAP, VTOC_BITMAP_SIZE, 0xff);
+	
+	vtoc->poke(VTOC_BITMAP, 0x0f);							// first 4 sectors are used by boot	
+	switch_sector_use(VTOC_SECTOR);
+	//for (auto sec = DIR_FIRST_SECTOR; sec < DIR_FIRST_SECTOR+DIR_SIZE; sec++) {
+	//	switch_sector_use(sec);
+	//}
 }
 
-void dos2::vtoc_write()
+void dos2::switch_sector_use(disk::sector_num sec, byte count) 
 {
-	if (vtoc_dirty) {
-		write_sector(VTOC_SECTOR, vtoc_buf);
-	}
-	vtoc_dirty = false;
+	do {
+		auto vtoc = get_sector(VTOC_SECTOR);
+		auto off = VTOC_BITMAP + sec / 8;
+		auto bit = 128 >> (sec & 7);
+		auto n = vtoc->peek(off);
+		n ^= bit;
+		vtoc->poke(off, n);
+
+		int free = vtoc->dpeek(VTOC_FREE_SEC);
+		if (n & bit) {
+			free++;
+		} else {
+			free--;
+		}
+		vtoc->dpoke(VTOC_FREE_SEC, free);
+		sec++;
+	} while (--count > 0);
 }
 
-void dos2::vtoc_read()
+bool dos2::find_free_sector(disk::sector_num vtoc_sec, size_t offset, size_t byte_count, disk::sector_num * p_sec)
 {
-	read_sector(VTOC_SECTOR, vtoc_buf);
-	vtoc_dirty = false;
+	auto vtoc = get_sector(vtoc_sec);
+
+	for (size_t i = 0; i < byte_count; i++) {		
+		if (auto b = vtoc->peek(offset + i)) {
+			byte sec = 0;
+			for (byte bit = 128; (b & bit) == 0; bit /= 2) {
+				sec++;
+			}
+			*p_sec = i * 8 + sec;
+			return true;
+
+		}
+	}
+	return false;
 }
 
 disk::sector_num dos2::alloc_sector()
@@ -443,38 +416,21 @@ Purpose:
 */
 {
 	disk::sector_num sec = 0;
-
-	for (size_t i = 0; i < VTOC_BITMAP_SIZE; i++) {
-		auto b = vtoc_buf[VTOC_BITMAP + i];
-		for (byte m = 128; m != 0; m /= 2) {
-			if (b & m) {
-				vtoc_buf[VTOC_BITMAP + i] = b ^ m;
-				int free = peek_word(vtoc_buf, VTOC_FREE_SEC);
-				free--;
-				poke_word(vtoc_buf, VTOC_FREE_SEC, free);
-				vtoc_dirty = true;
-				vtoc_write();
-				return sec;
-			}
-			sec++;
-		}
+	if (find_free_sector(VTOC_SECTOR, VTOC_BITMAP, VTOC_BITMAP_SIZE, &sec)) {
+		switch_sector_use(sec);
+		return sec;
 	}
 	throw "disk full";
 }
 
 void dos2::free_sector(disk::sector_num sector)
 {
-	switch_sector_used(sector);
-	auto free = peek_word(vtoc_buf, VTOC_FREE_SEC);
-	free--;
-	poke_word(vtoc_buf, VTOC_FREE_SEC, free);
-	vtoc_dirty = true;
+	switch_sector_use(sector);
 }
 
 disk::sector_num dos2::free_sector_count()
 {
-	disk::sector_num cnt = peek_word(vtoc_buf, VTOC_FREE_SEC);
-	return cnt;
+	return read_word(VTOC_SECTOR, VTOC_FREE_SEC);
 }
 
 disk::sector_num dos2::get_dos_first_sector() 
@@ -484,5 +440,5 @@ disk::sector_num dos2::get_dos_first_sector()
 
 void dos2::set_dos_first_sector(disk::sector_num sector) 
 {
-	return write_word(1, BOOT_FILE_LO, sector);
+	return write_word(1, BOOT_FILE_LO, word(sector));
 }

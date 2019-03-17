@@ -77,6 +77,7 @@ disk * pack(const string dir_filename)
 		string line;
 		getline(index, line);
 		if (line.size() == 0) continue;
+		if (line[0] == ';') continue;
 
 		istringstream s(line);
 
@@ -154,9 +155,12 @@ disk * pack(const string dir_filename)
 			filesystem::format_atari_name(fs, name, 8, 3);
 		}
 
+		for (auto i = 0; i < nesting; i++) cout << " | ";
+
 		if (fformat == file_format::dir) {
 			dir_stack.push_back(dir);
 			dir = dir->create_dir(name);
+			cout << filename << "/\n";
 		} else {
 			auto file = dir->create_file(name);
 			if (fformat != file_format::empty) {

@@ -28,7 +28,7 @@ public:
 	word read_word(disk::sector_num sector, size_t offset);
 	word read_word(disk::sector_num sector, size_t lo_offset, size_t hi_offset);
 
-	void write_word(disk::sector_num sector, size_t offset, size_t val);
+	void write_word(disk::sector_num sector, size_t offset, word val);
 	void write_byte(disk::sector_num sector, size_t offset, byte val);
 
 	byte get_property_byte(const property * prop);
@@ -46,7 +46,7 @@ public:
 		virtual byte read() = 0;
 		virtual void write(byte b) = 0;
 		void read(byte * data, size_t size);
-		virtual void write(const byte * data, size_t size);
+		virtual void write_bytes(const byte * data, size_t size);
 		void save(const std::string & filename);
 		void import(const std::string & filename);
 		virtual ~file() {};
@@ -56,6 +56,7 @@ public:
 	class dir
 	{
 	public:
+		virtual ~dir();
 		virtual std::string name() = 0;
 		virtual size_t sec_size() = 0;
 		virtual void next() = 0;
