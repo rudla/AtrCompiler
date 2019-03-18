@@ -1,7 +1,7 @@
 #include "dos_IIplus.h"
 
-const size_t yBOOT_FILE_LO = 0x03d;
-const size_t yBOOT_FILE_HI = 0x03f;
+static const size_t yBOOT_FILE_LO = 0x03d;
+static const size_t yBOOT_FILE_HI = 0x03f;
 
 std::string dos_IIplus::name()
 {

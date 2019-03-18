@@ -58,6 +58,19 @@ enum class file_format {
 	dir
 };
 
+bool is_reserved_filename(const string filename)
+{
+	const char * names[] = { "con", "aux", "nul", "prn",
+					"com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
+					"lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+					nullptr};
+
+	for (const char ** p = names; *p != nullptr; p++) {
+		if (filename == *p) return true;
+	}
+	return false;
+}
+
 disk * pack(const string dir_filename)
 {
 
@@ -198,7 +211,7 @@ void unpack_dir(filesystem::dir * dir, ofstream & atrdir, int nesting, disk::sec
 		if (dir->is_deleted()) continue;
 
 		string name = dir->name();
-
+		
 		for (int i = 0; i < nesting; i++) {
 			cout << " | ";
 			if (atrdir.is_open()) {

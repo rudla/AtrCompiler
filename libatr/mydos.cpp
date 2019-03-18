@@ -4,6 +4,14 @@
 #define FLAG_IN_USE 0x40
 #define FLAG_LOCKED 0x20
 
+#define FLAG_MYDOS45 0x04
+
+// LDY MAPBUF; WHICH TYPE DISK ?
+// CPY #3; IF >2 THEN MYDOS 4.50 +
+// BCC LLINKS
+// ORA #$04
+
+
 const size_t VTOC_FREE_SEC = 3;
 const size_t VTOC_BITMAP = 10;
 
@@ -13,8 +21,8 @@ std::string mydos::name()
 	return "mydos";
 }
 
-const size_t BOOT_FILE_LO = 0x0f;
-const size_t BOOT_FILE_HI = 0x10;
+static const size_t BOOT_FILE_LO = 0x0f;
+static const size_t BOOT_FILE_HI = 0x10;
 
 void mydos::set_dos_first_sector(disk::sector_num sector)
 {
@@ -46,14 +54,16 @@ bool mydos::detect(disk * d)
 	return a;
 }
 
-mydos::mydos(disk * d) : expanded_vtoc(d)
+mydos::mydos(disk * d) : expanded_vtoc(d, false)
 {
 }
 
 filesystem * mydos::format(disk * d)
 {
 	mydos * fs = new mydos(d);
-	fs->vtoc_format(0xffff);
+	byte version = 3;
+	if (d->sector_size() > 128) version = 0x23;
+	fs->vtoc_format(0xffff, false, version);
 	return fs;
 }
 

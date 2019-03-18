@@ -8,19 +8,27 @@ Identification <WORD>: ($9602). This word is the 16 bit sum of the individual AS
 
 Size of disk image <WORD>: The size is expressed in "paragraphs". A paragraph is sixteen bytes, thus Size = Image size in bytes / 16.
 
-Sector size <WORD>: 128 ($80) or 256 ($100) bytes per sector. Note that the original documentation only specifies two sector sizes, in practice however there is also sector size 512 ($200). 512 byte sectors were introduced by SpartaDOS X, and are sometimes used to create large ATR images. Some Atari Emulators and Peripheral emulators such as Altirra and AspeQt can make use of the 512 byte sectors in ATR files.
+Sector size <WORD>: 128 ($80) or 256 ($100) bytes per sector. Note that the original documentation only specifies two sector sizes,
+in practice however there is also sector size 512 ($200). 512 byte sectors were introduced by SpartaDOS X, and are sometimes used 
+to create large ATR images. Some Atari Emulators and Peripheral 
+emulators such as Altirra and AspeQt can make use of the 512 byte sectors in ATR files.
 
 High part of size <WORD>: in paragraphs (added by REV 3.00)
 
-Disk flags <BYTE>: Flags such as copy protection and write protect. The 9th byte of the header contains information in individual bits. Bit 4 = 1 means the disk image is treated as copy protected (has bad sectors). Bit 5 = 1 means the disk is write protected.
+Disk flags <BYTE>: Flags such as copy protection and write protect. The 9th byte of the header contains information 
+in individual bits. Bit 4 = 1 means the disk image is treated as copy protected (has bad sectors). 
+Bit 5 = 1 means the disk is write protected.
 
 1st bad sector <WORD>: The 10th and 11th bytes of the header is a word which contains the number of the first bad sector.
 
 5 SPARE header bytes (contain zeroes)
 
-After the header comes the disk image. This is just a continuous string of bytes, with the first 128 bytes being the contents of disk sector 1, the second being sector 2, etc. The first 3 sectors of an Atari disk must be 128 bytes long even if the rest of the sectors are 256 bytes or more.
+After the header comes the disk image. This is just a continuous string of bytes, with the first 128 bytes being 
+the contents of disk sector 1, the second being sector 2, etc. The first 3 sectors of an Atari disk must be 128 bytes 
+long even if the rest of the sectors are 256 bytes or more.
 
-Note that not all software will recognize or use the 1st bad sector header data, and some software do not follow the "first 3 sectors must be 128 bytes long" rule.
+Note that not all software will recognize or use the 1st bad sector header data, and some software do not 
+follow the "first 3 sectors must be 128 bytes long" rule.
 */
 
 #include "disk.h"
@@ -64,7 +72,7 @@ disk * disk::load(const std::string & filename)
 	f.read((char*)header, atr_header_size);
 
 	if (header[atr_magic] != 0x96 || header[atr_magic + 1] != 0x02) throw("This file is not an Atari disk file.");	
-	size_t size = (peek_word(header, atr_disk_size_hi) << 16) + peek_word(header, atr_disk_size) * 16;
+	size_t size = ((peek_word(header, atr_disk_size_hi) << 16) + peek_word(header, atr_disk_size)) * 16;
 	size_t sector_size = peek_word(header, atr_sector_size);
 	size_t boot_sector_size = (sector_size >= 256 && (size & 0xff) == 0) ? sector_size : 128;
 
@@ -99,8 +107,10 @@ void disk::save(const std::string & filename)
 
 	header[atr_magic] = 0x96;
 	header[atr_magic + 1] = 0x02;
-	auto x = (s_count * s_size / 16) & 0xffff;
-	poke_word(header, atr_disk_size, x);
+	auto x = ((s_count - 3) * s_size + 3 * 128) / 16;
+
+	poke_word(header, atr_disk_size, x & 0xffff);
+	poke_word(header, atr_disk_size_hi, (x >> 16) & 0xffff)
 	poke_word(header, atr_sector_size, s_size);
 
 	f.write((char *)header, atr_header_size);

@@ -63,7 +63,7 @@ void expanded_vtoc::switch_sector_use(disk::sector_num sec, byte count)
 	} while (--count > 0);
 }
 
-void expanded_vtoc::vtoc_format(disk::sector_num max_disk_size, bool reserve_720)
+void expanded_vtoc::vtoc_format(disk::sector_num max_disk_size, bool reserve_720, byte version)
 /*
 	DOS 2.0 does not use sector 720. Some DOSes follow this covention. If they do, reserve_720 is set to true.
 */
@@ -85,8 +85,8 @@ void expanded_vtoc::vtoc_format(disk::sector_num max_disk_size, bool reserve_720
 		word head = 0;
 
 		if (vtoc_size == 0) {
-			byte version = (disk_size > 720) ? 3 : 2;
-			s->poke(VTOC_VERSION, version);
+			byte vers = (disk_size > 720) ? version : 2;
+			s->poke(VTOC_VERSION, vers);
 			s->dpoke(VTOC_CAPACITY, size);
 			s->dpoke(VTOC_FREE_SEC, size);
 			s->poke(VTOC_BITMAP, 0x0f);		// first 4 sectors are used by boot	

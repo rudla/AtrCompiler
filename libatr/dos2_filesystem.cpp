@@ -1,4 +1,5 @@
 #include "dos2_filesystem.h"
+#include <cassert>
 
 using namespace std;
 
@@ -26,10 +27,10 @@ const size_t DIR_FILE_NAME = 5;
 disk::sector_num dos2::VTOC_SECTOR = 0x168;
 
 //==== BOOT
-const size_t BOOT_FILE_LO = 0x0f;
-const size_t BOOT_FILE_HI = 0x10;
-const size_t BOOT_BUFFERS = 0x09;
-const size_t BOOT_DRIVES  = 0x0A;  // bit for each drive $70A
+static const size_t BOOT_FILE_LO = 0x0f;
+static const size_t BOOT_FILE_HI = 0x10;
+static const size_t BOOT_BUFFERS = 0x09;
+static const size_t BOOT_DRIVES  = 0x0A;  // bit for each drive $70A
 
 std::string dos2::name()
 {
@@ -65,7 +66,7 @@ const filesystem::property * dos2::properties()
 	return props;
 }
 
-dos2::dos2(disk * d) : filesystem(d)
+dos2::dos2(disk * d, bool use_file_number) : filesystem(d), use_file_number(use_file_number)
 {
 }
 
@@ -197,6 +198,7 @@ dos2::dos2_file::dos2_file(dos2 & fs, disk::sector_num dir_sector, size_t dir_po
 	pos = 0;
 	sector = 0;
 	size = 0;
+	dos2_compatible = true;
 	if (!writing) {
 		sector = first_sec;		
 	}
@@ -246,7 +248,7 @@ dos2::dos2_file::~dos2_file()
 		}
 
 		auto dir = fs.get_sector(dir_sector);
-		dir->poke(dir_pos, FLAG_IN_USE + FLAG_DOS2);
+		dir->poke(dir_pos, FLAG_IN_USE + (dos2_compatible ? FLAG_DOS2: 0) + (fs.use_file_number ? 0 : 0x04));
 		dir->dpoke(dir_pos + DIR_FILE_SIZE, word(sec_cnt));
 		dir->dpoke(dir_pos + DIR_FILE_START, word(first_sec));
 	}
@@ -256,11 +258,21 @@ void dos2::dos2_file::write_data_sector(disk::sector_num next)
 {
 	auto p = fs.sector_size();
 	auto sec = fs.get_sector(sector);
+	byte sec_lo = next & 0xff;
+	byte sec_hi = byte(next >> 8);
+	
+	if (fs.use_file_number) {
+		assert(sec_hi <= 3);
+		sec_hi |= file_no << 2;
+	}
 	sec->poke(--p, byte(pos));
-	sec->poke(--p, next & 0xff);
-	sec->poke(--p, byte((file_no << 2) + (next >> 8)));
+	sec->poke(--p, sec_lo);
+	sec->poke(--p, sec_hi);
 	
 	sector = next;
+	if (sector > 720) {
+		dos2_compatible = false;
+	}
 	sec_cnt++;
 	pos = 0;
 }
@@ -273,7 +285,12 @@ bool dos2::dos2_file::sector_end()
 disk::sector_num dos2::dos2_file::sector_next()
 {
 	auto p = fs.sector_size();
-	return fs.read_byte(sector, p - 2) + ((fs.read_byte(sector, p - 3) & 3) << 8);
+	byte sec_lo = fs.read_byte(sector, p - 2);
+	byte sec_hi = fs.read_byte(sector, p - 3);
+
+	if (fs.use_file_number) sec_hi &= 3;
+	
+	return  sec_lo + (sec_hi << 8);
 }
 
 disk::sector_num dos2::dos2_file::first_sector()

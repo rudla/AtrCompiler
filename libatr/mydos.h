@@ -18,7 +18,7 @@ identifying  the  files  on  the disk, their sizes and their starting
 sector number.
 
 If the bit $10 is set in a directory entry, this entry is subdirectory.
-Sibdirectory has same format as main root directory of the disk. It's 8 sectors 
+Subdirectory has same format as main root directory of the disk. It's 8 sectors 
 in a row.
 
 ## VTOC
@@ -44,6 +44,7 @@ sectors of 256 bytes each (approximately 16 Mbytes).
 
 For medium density version in VTOC is 3, number of sectors is $403 (=1027).
 
+NOTE: 256 bytes density disk has $23 as VTOC version?
 
 ## Boot sector
 

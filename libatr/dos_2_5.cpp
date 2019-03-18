@@ -20,8 +20,8 @@ const size_t VTOC_FREE_SEC     = 3;
 const size_t VTOC_BITMAP       = 10;
 const size_t VTOC2_FREE_SEC = VTOC2_OFFSET + 122;
 
-const size_t BOOT_FILE_LO = 0x0f;
-const size_t BOOT_FILE_HI = 0x10;
+static const size_t BOOT_FILE_LO = 0x0f;
+static const size_t BOOT_FILE_HI = 0x10;
 
 std::string dos25::name()
 {

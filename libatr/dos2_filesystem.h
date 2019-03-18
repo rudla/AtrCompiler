@@ -37,7 +37,7 @@ public:
 	static disk::sector_num DIR_FIRST_SECTOR;
 	static size_t           DIR_SIZE;
 
-	dos2(disk * d);
+	dos2(disk * d, bool use_file_number = true);
 	~dos2();
 
 	static filesystem * format(disk * d);
@@ -90,6 +90,7 @@ public:
 		
 		size_t sec_cnt;					// size if not known yet
 		size_t size;					// size in bytes
+		bool dos2_compatible;
 	};
 
 	class dos2_dir : public filesystem::dir
@@ -131,4 +132,7 @@ protected:
 	virtual void free_sector(disk::sector_num sector);
 
 	virtual void vtoc_format(byte version);
+
+	bool use_file_number;
+	byte fs_file_flags;
 };

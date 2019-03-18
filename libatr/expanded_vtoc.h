@@ -38,10 +38,10 @@ For medium density version in VTOC is 3, number of sectors is $403 (=1027).
 class expanded_vtoc : public dos2 
 {
 protected:
-	expanded_vtoc(disk * d) : dos2(d) {}
+	expanded_vtoc(disk * d, bool use_file_numbers = true) : dos2(d, use_file_numbers) {}
 
 	void switch_sector_use(disk::sector_num sec, byte count = 1) override;
 	disk::sector_num alloc_sector() override;
-	void vtoc_format(disk::sector_num max_disk_size, bool reserve_720 = false);
+	void vtoc_format(disk::sector_num max_disk_size, bool reserve_720 = false, byte version = 3);
 
 };
