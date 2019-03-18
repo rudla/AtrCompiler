@@ -79,6 +79,23 @@ If necessary, we can specify filename, as it should appear on atari. We can \ as
 \\   backslash
 ```
 
+### Directories
+
+To specify new subdirectory, use slash before the filename. If the following file should be placed in this directory, start the line with |.
+
+For example:
+
+```
+DOS DOS.SYS
+DUP.SYS
+/ BOOKS
+ | OXYGEN.OBJ
+ | AHA.OBJ
+/ MUSIC
+ | EYES.OBJ
+ | BLUES.OBJ
+```
+
 ## MyDos
 
 MyDos subdirectories are supported.
