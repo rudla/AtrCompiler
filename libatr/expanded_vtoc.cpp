@@ -85,9 +85,9 @@ void expanded_vtoc::vtoc_format(disk::sector_num max_disk_size, bool reserve_720
 		word head = 0;
 
 		if (vtoc_size == 0) {
-			byte vers = (disk_size > 720) ? version : 2;
-			s->poke(VTOC_VERSION, vers);
-			s->dpoke(VTOC_CAPACITY, size);
+			//byte vers = (disk_size > 720) ? version : 2;
+			//s->poke(VTOC_VERSION, vers);
+			//s->dpoke(VTOC_CAPACITY, size);
 			s->dpoke(VTOC_FREE_SEC, size);
 			s->poke(VTOC_BITMAP, 0x0f);		// first 4 sectors are used by boot	
 			head = VTOC_BITMAP + 1;
@@ -110,6 +110,7 @@ void expanded_vtoc::vtoc_format(disk::sector_num max_disk_size, bool reserve_720
 
 	} while (size > 0);
 
+
 	// Mark the sectors used by VTOC as used
 	switch_sector_use(sec_num, vtoc_size);
 
@@ -119,8 +120,24 @@ void expanded_vtoc::vtoc_format(disk::sector_num max_disk_size, bool reserve_720
 		switch_sector_use(720);
 	}
 
-	// Free sectors when the disk is freshly initialized is stored as disk capacity
+	//  The VTOC signature byte is updated to indicate the size of the VTOC.It is $02 for a single density,
+	//	double density, or extended density disk.For a non - ED larger disk, it is raised by 1 for each every 256
+	//	bytes in the VTOC.Therefore, $03 means 256 bytes, $04 means 512 bytes, etc.This means that in
+	//	single density the VTOC is always an even number of sectors once it grows beyond one sector.SD disks
+	//	use more than one VTOC sector for disks of size 944 sectors or larger.DD disks use a VTOC code of $03
+	//	for sizes of 1024 - 1967 sectors, but only add a second sector for 1968 or more sectors.
+	//
+	//  [Altirra Programming Reference Manual; Lee, Avery; 2019-03-09 Edition]
 
+	byte vtoc_pages = vtoc_size;
+	if (sector_size() == 128) {
+		vtoc_pages = (vtoc_pages + 1) / 2;
+	}
+
+	d->write_byte(VTOC_SECTOR, VTOC_VERSION, 2 + vtoc_pages);
+
+	// Free sectors when the disk is freshly initialized is stored as disk capacity
+	
 	size = read_word(VTOC_SECTOR, VTOC_FREE_SEC);
 	write_word(VTOC_SECTOR, VTOC_CAPACITY, size);
 
