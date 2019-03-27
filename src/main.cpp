@@ -34,6 +34,14 @@ void change_dir(const std::string & name)
 #endif
 }
 
+bool iequals(const char * s1, const char * s2)
+{
+#if defined(_WIN32)
+	return _stricmp(s1, s2) == 0;
+#else
+	return strcasecmp(s1, s2) == 0;
+#endif
+}
 
 /*
 
@@ -66,7 +74,7 @@ bool is_reserved_filename(const string filename)
 					nullptr};
 
 	for (const char ** p = names; *p != nullptr; p++) {
-		if (filename == *p) return true;
+		if (iequals(filename.c_str(), *p)) return true;
 	}
 	return false;
 }

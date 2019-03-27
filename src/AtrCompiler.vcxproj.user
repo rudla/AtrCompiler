@@ -10,8 +10,8 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>pack bdcap2.atr</LocalDebuggerCommandArguments>
-    <LocalDebuggerWorkingDirectory>p:\Atari\AtrCompiler\folder13</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommandArguments>pack xdos_s2a.atr</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>p:\Atari\AtrCompiler\folder11</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

@@ -34,6 +34,7 @@ follow the "first 3 sectors must be 128 bytes long" rule.
 #include "disk.h"
 #include <iostream>
 #include <fstream>
+#include <cassert>
 
 using namespace std;
 
@@ -183,7 +184,8 @@ void disk::sector::copy(size_t offset, const char * ptr, size_t size)
 
 disk::sector::~sector()
 {
-	delete[] buf;
+//	delete[] buf;
+	buf = nullptr;
 }
 
 void disk::write_sector(sector_num num, byte * data)

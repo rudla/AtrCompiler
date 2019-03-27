@@ -16,7 +16,7 @@ disk::sector_num expanded_vtoc::alloc_sector()
 			switch_sector_use(num);
 			return num;
 		}
-		sector_offset = 0;
+		offset = 0;
 		num += byte_count * 8;
 		vtoc_sec--;
 	} while (num < sector_count());
@@ -131,7 +131,11 @@ void expanded_vtoc::vtoc_format(disk::sector_num max_disk_size, bool reserve_720
 
 	byte vtoc_pages = vtoc_size;
 	if (sector_size() == 128) {
-		vtoc_pages = (vtoc_pages + 1) / 2;
+		if (vtoc_size == 1) {
+			vtoc_pages = 0;
+		} else {
+			vtoc_pages = (vtoc_pages + 1) / 2;
+		}
 	}
 
 	d->write_byte(VTOC_SECTOR, VTOC_VERSION, 2 + vtoc_pages);
