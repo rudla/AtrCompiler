@@ -243,7 +243,7 @@ void unpack_dir(filesystem::dir * dir, ofstream & atrdir, int nesting, disk::sec
 				change_dir("..");
 			}
 		} else {
-			cout << std::right << std::setw(7) << dir->size() << "\n";
+			cout << std::right << std::setw(7) << dir->size() << std::setw(4) << dir->sec_size() << "\n";
 
 			if (atrdir.is_open()) {
 				if (dir->size() == 0) {
