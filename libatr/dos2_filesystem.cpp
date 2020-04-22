@@ -66,7 +66,7 @@ const filesystem::property * dos2::properties()
 	return props;
 }
 
-dos2::dos2(disk * d, bool use_file_number) : filesystem(d), use_file_number(use_file_number)
+dos2::dos2(disk * d, bool use_file_number,bool force_dos2_flag) : filesystem(d), use_file_number(use_file_number),force_dos2_flag(force_dos2_flag)
 {
 }
 
@@ -270,7 +270,7 @@ void dos2::dos2_file::write_data_sector(disk::sector_num next)
 	sec->poke(--p, sec_hi);
 	
 	sector = next;
-	if (sector > 720) {
+	if (sector > 720 && !fs.force_dos2_flag) {
 		dos2_compatible = false;
 	}
 	sec_cnt++;
