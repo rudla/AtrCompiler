@@ -54,7 +54,7 @@ bool mydos::detect(disk * d)
 	return a;
 }
 
-mydos::mydos(disk * d) : expanded_vtoc(d, false)
+mydos::mydos(disk * d) : expanded_vtoc(d, d->sector_size() > 128)
 {
 }
 

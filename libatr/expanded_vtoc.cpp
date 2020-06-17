@@ -36,7 +36,7 @@ void expanded_vtoc::switch_sector_use(disk::sector_num sec, byte count)
 
 		do {
 			size_t sec_cnt = (sector_size() - vtoc_bitmap) * 8;
-			if (num <= sec_cnt) break;
+			if (num < sec_cnt) break;
 			vtoc_sec--;
 			vtoc_bitmap = 0;
 			num -= sec_cnt;

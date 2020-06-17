@@ -7,6 +7,8 @@ using namespace std;
 
 disk::sector_num dos2::DIR_FIRST_SECTOR = 361;
 size_t           dos2::DIR_SIZE = 8;
+size_t           dos2::DIR_ENTRY_SIZE = 16;
+size_t           dos2::DIR_ENTRIES_PER_SECTOR = 8;
 
 enum DirFlags {
 	FLAG_NEVER_USED = 0x00,
@@ -114,8 +116,8 @@ bool dos2::dos2_dir::is_deleted()
 
 void dos2::dos2_dir::next()
 {
-	pos += 16;
-	if (pos == fs.sector_size()) {
+	pos += DIR_ENTRY_SIZE;
+	if (pos == DIR_ENTRIES_PER_SECTOR * DIR_ENTRY_SIZE) {		// fs.sector_size()
 		sector++;
 		if (at_end()) return;
 		pos = 0;
@@ -210,7 +212,7 @@ int dos2::dos2_dir::alloc_entry(const char * name, byte flags, disk::sector_num 
 	
 	for (auto sec = first_sector; sec < end_sector; sec++) {
 		auto s = fs.get_sector(sec);
-		for (size_t i = 0; i < fs.sector_size(); i += 16) {
+		for (size_t i = 0; i < DIR_ENTRIES_PER_SECTOR * DIR_ENTRY_SIZE; i += DIR_ENTRY_SIZE) {
 			auto f = s->peek(i);
 			if (f == 0 || (f & FLAG_DELETED)) {
 				s->poke(i, flags);
@@ -301,7 +303,7 @@ disk::sector_num dos2::dos2_file::first_sector()
 bool dos2::dos2_file::next_sector()
 {
 	disk::sector_num next = sector_next();
-	if (next == 0) return false;
+	if (next == 0 || next > fs.sector_count()) return false;
 	sector = next;
 	pos = 0;	
 	return true;

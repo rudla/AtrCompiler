@@ -36,6 +36,8 @@ public:
 
 	static disk::sector_num DIR_FIRST_SECTOR;
 	static size_t           DIR_SIZE;
+	static size_t           DIR_ENTRIES_PER_SECTOR;
+	static size_t           DIR_ENTRY_SIZE;
 
 	dos2(disk * d, bool use_file_number = true);
 	~dos2();
