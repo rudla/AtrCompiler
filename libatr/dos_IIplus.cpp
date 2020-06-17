@@ -50,6 +50,6 @@ const filesystem::property * dos_IIplus::properties()
 	return props;
 }
 
-dos_IIplus::dos_IIplus(disk * d) : expanded_vtoc(d)
+dos_IIplus::dos_IIplus(disk * d) : expanded_vtoc(d,true,true)
 {
 }

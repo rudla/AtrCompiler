@@ -39,7 +39,7 @@ public:
 	static size_t           DIR_ENTRIES_PER_SECTOR;
 	static size_t           DIR_ENTRY_SIZE;
 
-	dos2(disk * d, bool use_file_number = true);
+	dos2(disk * d, bool use_file_number = true, bool force_dos2_flag=false);
 	~dos2();
 
 	static filesystem * format(disk * d);
@@ -93,6 +93,7 @@ public:
 		size_t sec_cnt;					// size if not known yet
 		size_t size;					// size in bytes
 		bool dos2_compatible;
+                
 	};
 
 	class dos2_dir : public filesystem::dir
@@ -137,4 +138,5 @@ protected:
 
 	bool use_file_number;
 	byte fs_file_flags;
+    bool force_dos2_flag;
 };
