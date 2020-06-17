@@ -33,7 +33,7 @@ BOOT  filename
 The disk will be bootable. The file specified must contain 3 sectors that will be used for booting.
 
 ```
-FORMAT  filesystem [dos2]
+FORMAT  filesystem [2.5]
 ```
 Format the disk for use with specified filesystem.
 Possible values are:
