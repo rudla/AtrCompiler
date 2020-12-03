@@ -71,8 +71,8 @@ filesystem::dir * rkdos::root_dir()
 	auto root_file = new rkdos_file(*this, nullptr, root_entry, root_sec, 1, 32, false);
 
 
-	auto file = new rkdos_file(*this, root_file, root_entry, s->dpeek(root_entry+dir_cluster_start), s->peek(root_entry + dir_cluster_size), s->dpeek(root_entry + dir_file_size), false);
-	auto dir = new rkdos_dir(file);
+	rkdos_file * file = new rkdos_file(*this, root_file, root_entry, s->dpeek(root_entry+dir_cluster_start), s->peek(root_entry + dir_cluster_size), s->dpeek(root_entry + dir_file_size), false);
+	rkdos_dir * dir = new rkdos_dir(file);
 	return dir;
 }
 

@@ -122,7 +122,7 @@ filesystem::dir * mydos::mydos_dir::create_dir(char * name)
 	auto first_sector = static_cast<mydos&>(fs).alloc_dir();
 	auto file_no = alloc_entry(name, FLAG_IN_USE | FLAG_DIRECTORY, first_sector, &sector, &offset);
 
-	auto dir = new mydos_dir(static_cast<mydos&>(fs), first_sector);
+	mydos_dir * dir = new mydos_dir(static_cast<mydos&>(fs), first_sector);
 	dir->format();
 	return dir;
 }

@@ -126,7 +126,7 @@ sparta_dos::sparta_dos_dir::~sparta_dos_dir() {
 
 filesystem::dir * sparta_dos::open_dir(disk::sector_num sector)
 {
-	auto file = new sparta_dos_file(*this, sector, 32000, false);
+	sparta_dos_file * file = new sparta_dos_file(*this, sector, 32000, false);
 	return new sparta_dos_dir(file);
 }
 

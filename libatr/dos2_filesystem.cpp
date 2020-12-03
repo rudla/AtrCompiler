@@ -249,7 +249,7 @@ dos2::dos2_file::~dos2_file()
 			write_data_sector(0);
 		}
 
-		auto dir = fs.get_sector(dir_sector);
+		disk::sector * dir = fs.get_sector(dir_sector);
 		dir->poke(dir_pos, FLAG_IN_USE + (dos2_compatible ? FLAG_DOS2: 0) + (fs.use_file_number ? 0 : 0x04));
 		dir->dpoke(dir_pos + DIR_FILE_SIZE, word(sec_cnt));
 		dir->dpoke(dir_pos + DIR_FILE_START, word(first_sec));
